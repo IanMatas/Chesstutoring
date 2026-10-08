@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Chess Tutor — Learn chess with AI-powered Stockfish coaching, opening explorer, midgame strategy, and endgame mastery">
+    <title>Chess Tutor | AI-Powered Chess Coach</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>♔</text></svg>">
+</head>
+<body>
+    <div id="app">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="logo">
+                <span class="logo-icon">♔</span>
+                <span class="logo-text">Chess Tutor</span>
+                <span class="logo-badge">AI Coach</span>
+            </div>
+            <nav class="mode-tabs" id="modeTabs">
+                <button class="mode-tab active" data-mode="play" id="modePlay">
+                    <span class="mode-tab-icon">⚔️</span>
+                    <span class="mode-tab-label">Play & Learn</span>
+                </button>
+                <button class="mode-tab" data-mode="deep-analysis" id="modeDeepAnalysis">
+                    <span class="mode-tab-icon">🔍</span>
+                    <span class="mode-tab-label">Deep Strategy & Midgame</span>
+                </button>
+                <button class="mode-tab" data-mode="openings" id="modeOpenings">
+                    <span class="mode-tab-icon">📖</span>
+                    <span class="mode-tab-label">Openings</span>
+                </button>
+                <button class="mode-tab" data-mode="midgame" id="modeMidgame">
+                    <span class="mode-tab-icon">⚡</span>
+                    <span class="mode-tab-label">Scenarios</span>
+                </button>
+                <button class="mode-tab" data-mode="endgame" id="modeEndgame">
+                    <span class="mode-tab-icon">👑</span>
+                    <span class="mode-tab-label">Endgame</span>
+                </button>
+            </nav>
+        </header>
+
+        <!-- ═══════════════ PLAY MODE ═══════════════ -->
+        <main class="main-content" id="playMode">
+            <!-- Left Panel: Board -->
+            <section class="board-section">
+                <!-- Opponent info -->
+                <div class="player-info opponent">
+                    <div class="player-avatar bot-avatar">🤖</div>
+                    <div class="player-details">
+                        <span class="player-name" id="botName">Stockfish Bot</span>
+                        <span class="player-rating" id="botRating">Rating: 1500</span>
+                    </div>
+                    <div class="captured-pieces" id="botCaptured"></div>
+                </div>
+
+                <!-- Board + Eval bar -->
+                <div class="board-wrapper">
+                    <div class="eval-bar-container">
+                        <div class="eval-bar">
+                            <div class="eval-bar-fill" id="evalBarFill"></div>
+                        </div>
+                        <span class="eval-value" id="evalValue">0.0</span>
+                    </div>
+                    <div class="board-col">
+                        <div id="chessboard" class="chessboard"></div>
+                        <!-- Viewing-history banner -->
+                        <div class="viewing-banner" id="viewingBanner">
+                            <span id="viewingLabel">Viewing move history</span>
+                            <button id="playFromHereBtn" class="btn btn-accent btn-sm">▶ Play from here</button>
+                            <button id="resumeBtn" class="btn btn-secondary btn-sm">⏭ Resume</button>
+                        </div>
+                        <!-- Variation Preview Banner (Interactive Multi-Move Stepper) -->
+                        <div class="variation-preview-banner" id="variationPreviewBanner" style="display:none">
+                            <div class="variation-preview-header">
+                                <span class="variation-preview-title" id="varPreviewTitle">Plan A: Kingside Assault</span>
+                                <span class="variation-preview-step" id="varPreviewStep">Move 1 of 4: Nf3</span>
+                            </div>
+                            <div class="variation-preview-desc" id="varPreviewDesc">Attacks Black's e5 pawn with tempo</div>
+                            <div class="variation-preview-controls">
+                                <button id="varStartBtn" class="nav-btn btn-sm" title="Start of line">⏮</button>
+                                <button id="varPrevBtn" class="nav-btn btn-sm" title="Previous move">◀</button>
+                                <button id="varNextBtn" class="nav-btn btn-sm" title="Next move">▶</button>
+                                <button id="varEndBtn" class="nav-btn btn-sm" title="End of line">⏭</button>
+                                <button id="varExitBtn" class="btn btn-secondary btn-sm">↩ Back to Game</button>
+                                <button id="varPlayVsBotBtn" class="btn btn-accent btn-sm">🤖 Play vs Bot</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Player info -->
+                <div class="player-info player">
+                    <div class="player-avatar">👤</div>
+                    <div class="player-details">
+                        <span class="player-name">You</span>
+                        <span class="player-rating" id="playerStatus">Your turn</span>
+                    </div>
+                    <div class="captured-pieces" id="playerCaptured"></div>
+                </div>
+
+                <!-- Move Navigation -->
+                <div class="board-controls-row">
+                    <div class="board-controls">
+                        <button id="newGameBtn" class="btn btn-primary"><span class="icon">🔄</span> New Game</button>
+                        <button id="undoBtn" class="btn btn-secondary"><span class="icon">↩</span> Undo</button>
+                        <button id="hintBtn" class="btn btn-accent"><span class="icon">💡</span> Hint</button>
+                        <button id="flipBtn" class="btn btn-ghost"><span class="icon">🔃</span> Flip</button>
+                    </div>
+                    <div class="move-nav">
+                        <button id="firstMoveBtn" class="nav-btn" title="First position (Home)">⏮</button>
+                        <button id="prevMoveBtn"  class="nav-btn" title="Previous move (←)">◀</button>
+                        <button id="nextMoveBtn"  class="nav-btn" title="Next move (→)">▶</button>
+                        <button id="lastMoveBtn"  class="nav-btn" title="Latest position (End)">⏭</button>
+                    </div>
+                </div>
+
+                <!-- Rating slider -->
+                <div class="rating-control">
+                    <label class="rating-label">
+                        <span>Bot Difficulty</span>
+                        <span class="rating-display" id="ratingDisplay">1500</span>
+                    </label>
+                    <input type="range" id="ratingSlider" min="400" max="3000" value="1500" step="100" class="rating-slider">
+                    <div class="rating-labels">
+                        <span>Beginner</span>
+                        <span>Intermediate</span>
+                        <span>Advanced</span>
+                        <span>Master</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Right Panel: Coach + History -->
+            <section class="coach-section">
+                <!-- Coach Analysis -->
+                <div class="coach-panel">
+                    <div class="coach-header">
+                        <div class="coach-avatar">🎓</div>
+                        <div class="coach-title">
+                            <h2>Coach Analysis</h2>
+                            <span class="coach-status" id="coachStatus">Ready to analyze</span>
+                        </div>
+                    </div>
+                    <div class="coach-content" id="coachContent">
+                        <div class="coach-welcome">
+                            <div class="welcome-icon">♟️</div>
+                            <h3>Welcome to Chess Tutor!</h3>
+                            <p>Make your first move and I'll analyze it for you. I'll tell you if your move was brilliant, good, or if there was something better.</p>
+                            <div class="legend">
+                                <div class="legend-item"><span class="dot brilliant"></span> Brilliant</div>
+                                <div class="legend-item"><span class="dot great"></span> Great</div>
+                                <div class="legend-item"><span class="dot good"></span> Good</div>
+                                <div class="legend-item"><span class="dot inaccuracy"></span> Inaccuracy</div>
+                                <div class="legend-item"><span class="dot mistake"></span> Mistake</div>
+                                <div class="legend-item"><span class="dot blunder"></span> Blunder</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Move History -->
+                <div class="history-panel">
+                    <div class="history-header">
+                        <h3>Move History</h3>
+                        <span class="move-counter" id="moveCounter"></span>
+                    </div>
+                    <div class="move-list" id="moveList">
+                        <div class="empty-history">No moves yet</div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- ═══════════════ DEEP ANALYSIS & STRATEGY MODE ═══════════════ -->
+        <main class="main-content deep-analysis-view" id="deepAnalysisMode" style="display:none">
+            <!-- Left: Board + Tools -->
+            <section class="board-section">
+                <!-- Header / Controls Banner -->
+                <div class="analysis-session-header" id="analysisHeader">
+                    <div class="analysis-title-box">
+                        <span class="analysis-icon">🔍</span>
+                        <div>
+                            <h2 id="analysisTitle">Middlegame Master & Deep Analysis</h2>
+                            <p id="analysisSubtitle">Understand the WHY behind every square and plan before you move</p>
+                        </div>
+                    </div>
+                    <div class="analysis-quick-actions">
+                        <button class="btn btn-secondary btn-sm" id="analysisImportGameBtn" title="Load position from your Play & Learn game">
+                            <span>📥</span> Load My Game
+                        </button>
+                        <button class="btn btn-accent btn-sm" id="analysisRandomMidgameBtn" title="Load a fresh post-opening middlegame position">
+                            <span>🎲</span> Random Midgame Position
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Board + Eval bar -->
+                <div class="board-wrapper">
+                    <div class="eval-bar-container">
+                        <div class="eval-bar">
+                            <div class="eval-bar-fill" id="analysisEvalBarFill"></div>
+                        </div>
+                        <span class="eval-score" id="analysisEvalScore">0.0</span>
+                    </div>
+                    <div class="board-col">
+                        <div id="analysisBoard" class="chessboard"></div>
+                    </div>
+                </div>
+
+                <!-- Board Controls -->
+                <div class="board-controls-row">
+                    <div class="board-controls">
+                        <button id="analysisResetBtn" class="btn btn-secondary"><span class="icon">🔄</span> Reset</button>
+                        <button id="analysisUndoBtn" class="btn btn-ghost"><span class="icon">↩</span> Undo</button>
+                        <button id="analysisBotMoveBtn" class="btn btn-accent"><span class="icon">🤖</span> Bot Move</button>
+                        <button id="analysisBotToggleBtn" class="btn btn-secondary active" title="Bot automatically replies to your moves"><span class="icon">🤖</span> Bot: ON</button>
+                        <button id="analysisFlipBtn" class="btn btn-ghost"><span class="icon">🔃</span> Flip</button>
+                        <button id="analysisToggleArrowsBtn" class="btn btn-ghost active"><span class="icon">🏹</span> Arrows</button>
+                    </div>
+                    <div class="analysis-position-select-wrap">
+                        <label for="analysisPresetSelect">Scenario:</label>
+                        <select id="analysisPresetSelect" class="styled-select">
+                            <option value="italian-mid">Italian Game — Post-Opening (e4 e5)</option>
+                            <option value="sicilian-mid">Sicilian Dragon — Open Center</option>
+                            <option value="french-mid">French Defense — Pawn Chain & Break</option>
+                            <option value="qgd-mid">Queen's Gambit — Minority Attack</option>
+                            <option value="ruy-mid">Ruy Lopez — Knights & Outposts</option>
+                            <option value="custom">Custom Position</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Multi-Move Sequence Navigation Bar -->
+                <div class="sequence-nav-bar" id="analysisSequenceBar" style="display:none">
+                    <div class="sequence-controls">
+                        <button id="seqStartBtn" class="nav-btn" title="Start of sequence">⏮</button>
+                        <button id="seqPrevBtn" class="nav-btn" title="Previous move">◀</button>
+                        <span class="sequence-indicator" id="analysisStepIndicator">Move 1 of 5</span>
+                        <button id="seqNextBtn" class="nav-btn" title="Next move">▶</button>
+                        <button id="seqEndBtn" class="nav-btn" title="End of sequence">⏭</button>
+                    </div>
+                    <button id="analysisPlayVsAiBtn" class="btn btn-accent btn-sm">
+                        <span>🤖</span> Play vs AI from Here
+                    </button>
+                </div>
+
+                <!-- Interactive Guide Banner -->
+                <div class="square-inspector-banner">
+                    <span class="pulse-dot"></span>
+                    <span><strong>💡 How to Master Midgame Attacks:</strong> 1. Pick an Attack Pattern &rarr; 2. Step through moves with <strong>[▶ Next]</strong> to see how pieces coordinate &rarr; 3. Test your own moves to build attacks!</span>
+                </div>
+            </section>
+
+            <!-- Right: Deep Strategic Learning Panel -->
+            <section class="coach-section">
+                <div class="analysis-panel">
+                    <!-- Tabbed Deep Learning Views -->
+                    <div class="analysis-tabs">
+                        <button class="analysis-tab active" data-tab="plans" id="analysisTabPlans">
+                            <span>🗺️</span> Strategic Plans
+                        </button>
+                        <button class="analysis-tab" data-tab="patterns" id="analysisTabPatterns">
+                            <span>⚔️</span> Attack Patterns & Pieces
+                        </button>
+                        <button class="analysis-tab" data-tab="move-explainer" id="analysisTabMove">
+                            <span>🎯</span> Move & Blunder Explainer
+                        </button>
+                        <button class="analysis-tab" data-tab="inspector" id="analysisTabInspector">
+                            <span>🔬</span> Piece & Square Radar
+                        </button>
+                        <button class="analysis-tab" data-tab="checklist" id="analysisTabChecklist">
+                            <span>📋</span> Post-Opening Checklist
+                        </button>
+                    </div>
+
+                    <!-- Panel Content Body -->
+                    <div class="analysis-body" id="analysisBodyContent">
+                        <!-- Populated dynamically by JS -->
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- ═══════════════ TRAINING MODE ═══════════════ -->
+        <main class="training-hub" id="trainingHub" style="display:none">
+            <div class="training-hub-inner">
+                <!-- Training category selector rendered by JS -->
+                <div id="trainingContent" class="training-content"></div>
+            </div>
+        </main>
+
+        <!-- ═══════════════ TRAINING SESSION (board + guide) ═══════════════ -->
+        <main class="main-content training-session" id="trainingSession" style="display:none">
+            <!-- Left: Board -->
+            <section class="board-section">
+                <div class="training-session-header" id="trainingSessionHeader">
+                    <!-- Populated by JS -->
+                </div>
+                <div class="board-wrapper">
+                    <div class="board-col">
+                        <div id="trainingBoard" class="chessboard"></div>
+                    </div>
+                </div>
+                <div class="board-controls-row">
+                    <div class="board-controls">
+                        <button id="trainResetBtn" class="btn btn-secondary"><span class="icon">🔄</span> Restart</button>
+                        <button id="trainBackBtn" class="btn btn-ghost"><span class="icon">◀</span> Back to List</button>
+                        <button id="trainFlipBtn" class="btn btn-ghost"><span class="icon">🔃</span> Flip</button>
+                    </div>
+                    <div class="move-nav">
+                        <button id="trainPrevBtn" class="nav-btn" title="Previous move">◀</button>
+                        <button id="trainNextBtn" class="nav-btn" title="Next move">▶</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Right: Training Guide -->
+            <section class="coach-section">
+                <div class="coach-panel training-guide-panel">
+                    <div class="coach-header">
+                        <div class="coach-avatar" id="trainGuideIcon">📖</div>
+                        <div class="coach-title">
+                            <h2 id="trainGuideTitle">Training Guide</h2>
+                            <span class="coach-status" id="trainGuideStatus">Step 1</span>
+                        </div>
+                    </div>
+                    <div class="coach-content" id="trainGuideContent">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Training move list -->
+                <div class="history-panel">
+                    <div class="history-header">
+                        <h3>Moves Played</h3>
+                        <span class="move-counter" id="trainMoveCounter"></span>
+                    </div>
+                    <div class="move-list" id="trainMoveList">
+                        <div class="empty-history">Play the opening moves</div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- New Game Modal -->
+    <div class="modal-overlay" id="newGameModal">
+        <div class="modal">
+            <h2>New Game</h2>
+            <div class="modal-body">
+                <div class="option-group">
+                    <label>Play as</label>
+                    <div class="color-select">
+                        <button class="color-btn active" data-color="white">♔ White</button>
+                        <button class="color-btn" data-color="black">♚ Black</button>
+                        <button class="color-btn" data-color="random">🎲 Random</button>
+                    </div>
+                </div>
+                <div class="option-group">
+                    <label>Bot Rating: <span id="modalRating">1500</span></label>
+                    <input type="range" id="modalRatingSlider" min="400" max="3000" value="1500" step="100" class="rating-slider">
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button id="startGameBtn" class="btn btn-primary">Start Game</button>
+                <button id="cancelModalBtn" class="btn btn-ghost">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Promotion Modal -->
+    <div class="modal-overlay" id="promotionModal">
+        <div class="modal promotion-modal">
+            <h3>Promote Pawn</h3>
+            <div class="promotion-pieces" id="promotionPieces"></div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay active" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <h3>Initializing Stockfish Engine…</h3>
+            <p>Loading the chess analysis engine</p>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+    <script src="js/sounds.js"></script>
+    <script src="js/engine.js"></script>
+    <script src="js/coach.js"></script>
+    <script src="js/trainer.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
