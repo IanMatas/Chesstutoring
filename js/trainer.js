@@ -67,9 +67,9 @@ const ChessTrainer = (() => {
                 { move: 'e5',  white: false, explanation: "Symmetrical response, fighting for space." },
                 { move: 'Nf3', white: true,  explanation: "Attack e5 and develop toward the kingside." },
                 { move: 'Nc6', white: false, explanation: "Defend e5 naturally." },
-                { move: 'Bb5', white: true,  explanation: "The Ruy López! Pin the knight to the king. This doesn't win the e5 pawn immediately (Bxc6 dxc6, Nxe5?? Qd4 wins it back), but it creates lasting pressure." },
+                { move: 'Bb5', white: true,  explanation: "The Ruy López! Put pressure on the knight that defends e5. The d7 pawn means it is not yet pinned to the king. This doesn't win the e5 pawn immediately (Bxc6 dxc6, Nxe5?? Qd4 wins it back), but it creates lasting pressure." },
                 { move: 'a6',  white: false, explanation: "The Morphy Defense — asking the bishop 'where are you going?' This is the most popular response." },
-                { move: 'Ba4', white: true,  explanation: "Retreat but maintain the pin. The bishop stays active on the a4-e8 diagonal." },
+                { move: 'Ba4', white: true,  explanation: "Retreat while keeping pressure on the knight. The bishop stays active on the a4-e8 diagonal." },
                 { move: 'Nf6', white: false, explanation: "Attack e4 while developing. A double-duty move." },
                 { move: 'O-O', white: true,  explanation: "Castle immediately! King safety first, then you can handle the center later." },
                 { move: 'Be7', white: false, explanation: "Prepare to castle. The bishop on e7 is modest but solid." },
@@ -803,7 +803,7 @@ const ChessTrainer = (() => {
                     playerColor: 'w',
                     objective: "You have a rook on b1 and the black king is stuck behind its pawns. Find the checkmate!",
                     keyMoves: [{ move: 'Rb8', explanation: "Rb8# is checkmate! The black king has no escape — trapped behind its own f7, g7, h7 pawns. Classic back rank mate.", bestMove: true }],
-                    lesson: "The back rank mate is one of the most common tactical patterns. Always give your king a 'luft' (breathing hole) with h3/h6.",
+                    lesson: "The back rank mate is one of the most common tactical patterns. Consider a safe escape square for your king when back-rank threats arise; first check whether a pawn move creates another weakness.",
                 },
                 {
                     fen: "2r3k1/5ppp/8/8/8/5Q2/5PPP/6K1 w - - 0 1",
@@ -1074,7 +1074,7 @@ const ChessTrainer = (() => {
             description: "The most fundamental endgame. Learn the 'opposition' — the key concept that determines if a single pawn can promote and win.",
             positions: [
                 {
-                    fen: "8/8/4k3/8/4PK2/8/8/8 w - - 0 1",
+                    fen: "8/4k3/8/8/4PK2/8/8/8 w - - 0 1",
                     playerColor: 'w',
                     objective: "You have a king and pawn vs lone king. Advance your pawn to promote it! Use the opposition to force your way through.",
                     keyMoves: [{ move: 'Ke5', explanation: "First, advance the KING, not the pawn! The king must lead. Ke5 takes the opposition — Black's king must give way." }],
@@ -1085,14 +1085,14 @@ const ChessTrainer = (() => {
                     playerColor: 'w',
                     objective: "Your pawn is on e2 and kings are close. Is this position a win or a draw?",
                     keyMoves: [{ move: 'Kf1', explanation: "Kf1! This is actually a draw — White cannot make progress because Black has the opposition. Any pawn push allows ...Ke4 blockading. This teaches you the limits of K+P vs K." }],
-                    lesson: "When the defending king is IN FRONT of the pawn and has the opposition, it's a draw! Knowing when you can't win is just as important as knowing when you can.",
+                    lesson: "In this position, the defending king can keep the pawn blocked with correct play. Opposition and key squares matter; a king in front of a pawn does not guarantee a draw in every position.",
                 },
                 {
-                    fen: "8/4k3/8/4PK2/8/8/8/8 w - - 0 1",
+                    fen: "4k3/8/8/4PK2/8/8/8/8 w - - 0 1",
                     playerColor: 'w',
                     objective: "Your pawn is on e5 and your king is beside it. Win this!",
-                    keyMoves: [{ move: 'Ke6', explanation: "Ke6! Get in front of the pawn and take the opposition. After ...Kd8 Kd6! Ke8 e6 Kd8 e7+ Ke8 Ke6 and it's stalemate... unless you play Kd6! first. The technique is precise." }],
-                    lesson: "In K+P vs K, the crucial rule: NEVER push the pawn to the 6th rank unless it gives check! Get your king to the 6th rank first, THEN push the pawn.",
+                    keyMoves: [{ move: 'Ke6', explanation: "Ke6! The king reaches the sixth rank ahead of its pawn and takes the opposition. Support the pawn's advance with your king and check for stalemate before each move." }],
+                    lesson: "In king-and-pawn endings, check key squares, opposition, and stalemate before pushing. Advancing the king first is often useful, but the exact position determines whether a pawn move wins or draws.",
                 },
             ],
             tips: [
