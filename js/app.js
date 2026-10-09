@@ -101,6 +101,8 @@
 
         /* ── Reset position/move history ── */
         _resetHistory() {
+            this.activeVariation = null;
+            document.getElementById('variationPreviewBanner').style.display = 'none';
             this.posHistory = [this.game.fen()];
             this.moveData   = [];
             this.viewIndex  = 0;
@@ -430,6 +432,7 @@
            Square click logic
            ══════════════════════════════════════════════════ */
         _onSquareClick(name) {
+            if (this.activeVariation) return;
             if (this.selected) {
                 const vm = this.validMoves.find(m => m.to === name);
                 if (vm) { this._playerMove(vm); return; }
@@ -470,6 +473,7 @@
         }
 
         _startDrag(name, e) {
+            if (this.activeVariation) return;
             this._cancelDrag();
             this._select(name);
             const p = this.game.get(name);
@@ -569,7 +573,7 @@
                 captured: move.captured || null,
                 isPlayer: true, classification: coaching.classification,
                 coaching, phase: coaching.phase,
-                boardSituation, futureVariations,
+                boardSituation, futureVariations, engineLines: multiPv,
                 cpLoss, evalBefore: cpBefore, evalAfter: -cpAfterRaw, bestMove: evalBefore.bestMove || '',
                 fenBefore: this.posHistory[this.posHistory.length - 2],
                 fenAfter: newFen
@@ -624,7 +628,7 @@
             let botPvLines = [];
             try {
                 // Get future PV lines from the position AFTER bot's move (player's perspective)
-                botPvLines = await this.analysisEngine.evaluateMultiPV(this.game.fen(), 2, 7, 350);
+                botPvLines = await this.analysisEngine.evaluateMultiPV(this.game.fen(), 3, 12, 900);
             } catch (_) {}
 
             try {
@@ -639,6 +643,7 @@
                 captured: move.captured || null,
                 isPlayer: false, classification: null, coaching: null,
                 botAnalysis: botAnalysis,
+                engineLines: botPvLines,
                 fenBefore: fenBeforeBot,
                 fenAfter: this.game.fen(),
                 cpLoss: 0, evalBefore: 0, evalAfter: 0, bestMove: ''
@@ -649,7 +654,7 @@
 
             // Show bot analysis coaching panel
             if (botAnalysis) {
-                this._showBotCoaching(botAnalysis, move);
+                this._showBotCoaching(botAnalysis, this.moveData[this.moveData.length - 1]);
             }
 
             if (this.game.game_over()) { this._gameOver(); return; }
@@ -757,7 +762,7 @@
 
                     <div class="coach-tabs">
                         <button class="coach-tab active" data-tab="situation">🎓 Lesson & Board Radar</button>
-                        <button class="coach-tab" data-tab="variations">🔮 Future Attack Plans (${variations.length})</button>
+                        <button class="coach-tab" data-tab="variations">🔮 Move continuations (${variations.length})</button>
                         <button class="coach-tab" data-tab="deep">📊 Polish & Rating</button>
                     </div>
 
@@ -818,7 +823,7 @@
                     <!-- TAB 2: Future Variations -->
                     <div class="coach-tab-content" id="coachVariationsTab" style="display:none">
                         <p style="font-size:12.5px;color:var(--text-muted);margin:0 0 10px 0;line-height:1.5">
-                            A chess master always calculates multiple candidate plans. Here are the <strong>${variations.length} best future attack paths</strong> you can choose from this position:
+                            These <strong>${variations.length} continuations</strong> start after your move, with your opponent to play. Calculate both sides of each line:
                         </p>
 
                         <div style="display:flex;flex-direction:column;gap:10px">
@@ -943,6 +948,7 @@
             } else {
                 this._clearArrows();
             }
+            this._appendEngineLines(document.getElementById('coachContent'), md.fenAfter, md.engineLines || []);
         }
 
         /* ══════════════════════════════════════════════════
@@ -952,6 +958,15 @@
         _showBotCoaching(analysis, md) {
             const a = analysis;
             const dl = a.dangerLevel;
+            // Keep the last player lesson alive when the bot replies, including its controls.
+            const index = this.moveData.indexOf(md);
+            const previous = index > 0 ? this.moveData[index - 1] : null;
+            const lesson = document.createElement('section');
+            lesson.className = 'previous-move-lesson';
+            if (previous?.coaching) {
+                this._showCoaching(previous.coaching, previous);
+                lesson.append(...document.getElementById('coachContent').childNodes);
+            }
 
             // Draw arrow showing bot's move
             this._clearArrows();
@@ -1094,6 +1109,39 @@
                     document.getElementById('botDefenseTab').style.display = which === 'defense' ? '' : 'none';
                 });
             });
+            const content = document.getElementById('coachContent');
+            this._appendEngineLines(content, md.fenAfter, md.engineLines || []);
+            if (lesson.childNodes.length) content.append(lesson);
+        }
+
+        _appendEngineLines(container, fen, lines) {
+            if (!fen || !lines.length) return;
+            const section = document.createElement('section');
+            section.className = 'live-engine-lines';
+            const side = new Chess(fen).turn() === 'w' ? 'White' : 'Black';
+            section.innerHTML = `<h3>Engine lines · ${side} to move</h3><p>Evaluations from White’s perspective. Explore a line on the board; moves are predictions, not forced replies.</p>`;
+            lines.forEach((line, index) => {
+                const game = new Chess(fen);
+                const positions = [fen], moves = [], notation = [];
+                for (const uci of line.pv.slice(0, 10)) {
+                    const number = game.fen().split(' ')[5];
+                    const color = game.turn();
+                    const move = game.move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] });
+                    if (!move) break;
+                    notation.push(`${color === 'w' ? number + '.' : moves.length === 0 ? number + '...' : ''}${move.san}`);
+                    positions.push(game.fen());
+                    moves.push({ ...move, note: `${move.color === 'w' ? 'White' : 'Black'} plays ${move.san}${move.captured ? ', capturing on ' + move.to : ''}.`, fen: game.fen() });
+                }
+                if (!moves.length) return;
+                const sign = new Chess(fen).turn() === 'w' ? 1 : -1;
+                const evaluation = this.coach.formatEval((line.score || 0) * sign, line.mate == null ? null : line.mate * sign);
+                const button = document.createElement('button');
+                button.className = 'engine-line btn btn-secondary';
+                button.textContent = `${index + 1}. ${evaluation} · ${notation.join(' ')} (depth ${line.depth})`;
+                button.addEventListener('click', () => this._previewVariation({ title: `Candidate ${index + 1}: ${moves[0].san}`, whyBetter: `Engine continuation, evaluation ${evaluation} for White. Opponent replies are included.`, positions, moves }));
+                section.append(button);
+            });
+            container.prepend(section);
         }
 
         /* ══════════════════════════════════════════════════
@@ -1126,6 +1174,8 @@
 
         _previewVariation(variation) {
             if (!variation || !variation.moves || variation.moves.length === 0) return;
+            this._cancelDrag();
+            this._deselect(true);
             ChessSounds.tabSwitch();
             this.activeVariation = variation;
             this.varStepIndex = 0;
@@ -1204,12 +1254,31 @@
         }
 
         async _playFromVariation(variation) {
-            if (!variation || !variation.moves || variation.moves.length === 0) return;
-            const firstMove = variation.moves[0];
-            this._exitVariationPreview();
-            if (this.game.turn() === this.playerColor && !this.thinking && !this.over) {
-                await this._playerMove(firstMove.from, firstMove.to);
+            if (!variation?.positions?.length || this.thinking) return;
+            const index = this.activeVariation === variation ? this.varStepIndex : 0;
+            const game = new Chess(variation.positions[index] || variation.positions[0]);
+            if (game.game_over()) {
+                this._status('This position is finished. Step back to practice an earlier position.');
+                return;
             }
+            this.game = game;
+            this.playerColor = game.turn();
+            this.flipped = this.playerColor === 'b';
+            this.over = false;
+            this.cachedEval = null;
+            this.selected = null;
+            this.validMoves = [];
+            this._resetHistory();
+            this._clearCheckmateVisuals();
+            this._buildBoard();
+            this._exitVariationPreview();
+            this._rebuildHistory();
+            this._updateCaptured();
+            this._showCoachingForView();
+            this.thinking = true;
+            try { await this._evalAndCache(); }
+            finally { this.thinking = false; }
+            this._status('Practice game started from this position. Your turn.');
         }
 
         /* ══════════════════════════════════════════════════
@@ -1963,6 +2032,9 @@
             if (deepEl) deepEl.style.display = mode === 'deep-analysis' ? '' : 'none';
             document.getElementById('trainingHub').style.display = ['openings','midgame','endgame'].includes(mode) ? '' : 'none';
             document.getElementById('trainingSession').style.display = 'none';
+            document.getElementById('puzzleMode').style.display = mode === 'puzzles' ? '' : 'none';
+            if (mode === 'puzzles') window.puzzles.open();
+            else window.puzzles.pause();
 
             if (mode === 'deep-analysis') this._initDeepAnalysisMode();
             else if (mode === 'openings') this._renderOpeningsHub();

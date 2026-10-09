@@ -69,7 +69,7 @@ class StockfishEngine {
     }
 
     /* ── Evaluate a position ── */
-    async evaluate(fen, depth = 10, maxTime = 600) {
+    async evaluate(fen, depth = 10, maxTime = 600, searchMoves = []) {
         this.send('stop');                       // cancel any previous search
         return new Promise(resolve => {
             let best = null;
@@ -109,7 +109,8 @@ class StockfishEngine {
 
             this._on(handler);
             this.send(`position fen ${fen}`);
-            this.send(`go depth ${depth} movetime ${maxTime}`);
+            const restricted = searchMoves.length ? ` searchmoves ${searchMoves.join(' ')}` : '';
+            this.send(`go depth ${depth} movetime ${maxTime}${restricted}`);
         });
     }
 

@@ -24,6 +24,7 @@
                     <span class="mode-tab-icon">⚔️</span>
                     <span class="mode-tab-label">Play & Learn</span>
                 </button>
+                <button class="mode-tab" data-mode="puzzles" id="modePuzzles" aria-label="Endless Puzzles"><span class="mode-tab-icon">🧩</span><span class="mode-tab-label">Endless Puzzles</span></button>
                 <button class="mode-tab" data-mode="deep-analysis" id="modeDeepAnalysis">
                     <span class="mode-tab-icon">🔍</span>
                     <span class="mode-tab-label">Deep Strategy & Midgame</span>
@@ -86,7 +87,7 @@
                                 <button id="varNextBtn" class="nav-btn btn-sm" title="Next move">▶</button>
                                 <button id="varEndBtn" class="nav-btn btn-sm" title="End of line">⏭</button>
                                 <button id="varExitBtn" class="btn btn-secondary btn-sm">↩ Back to Game</button>
-                                <button id="varPlayVsBotBtn" class="btn btn-accent btn-sm">🤖 Play vs Bot</button>
+                                <button id="varPlayVsBotBtn" class="btn btn-accent btn-sm" title="Starts a new practice game from the displayed position">🤖 Practice this position</button>
                             </div>
                         </div>
                     </div>
@@ -286,6 +287,34 @@
         </main>
 
         <!-- ═══════════════ TRAINING MODE ═══════════════ -->
+        <main class="main-content" id="puzzleMode" style="display:none">
+            <section class="board-section">
+                <h2>Endless Puzzles</h2>
+                <p id="puzzleTurn">Find the strongest continuation.</p>
+                <div id="puzzleBoard" class="chessboard puzzle-board" aria-label="Puzzle chessboard"></div>
+                <div class="board-controls-row puzzle-controls">
+                    <label>Difficulty <select id="puzzleDifficulty" class="styled-select"><option value="standard">Standard · 2 moves</option><option value="challenging" selected>Challenging · 3 moves</option><option value="expert">Expert · 4 moves</option></select></label>
+                    <label>Promote to <select id="puzzlePromotion" class="styled-select"><option value="q">Queen</option><option value="r">Rook</option><option value="b">Bishop</option><option value="n">Knight</option></select></label>
+                </div>
+                <div class="board-controls-row puzzle-controls">
+                    <button id="puzzleNext" class="btn btn-primary">New puzzle</button>
+                    <button id="puzzleHint" class="btn btn-secondary">Hint</button>
+                    <button id="puzzleReveal" class="btn btn-secondary">Show solution</button>
+                    <button id="puzzleRestart" class="btn btn-ghost">Retry</button>
+                    <button id="puzzleCancel" class="btn btn-ghost" hidden>Cancel search</button>
+                </div>
+            </section>
+            <section class="coach-section"><div class="coach-panel puzzle-guide">
+                <h3>Find it. Calculate it. Play it.</h3>
+                <p>Fresh positions from randomized legal games, checked by Stockfish. Keep finding the strongest moves against the engine’s replies. No fixed deck to finish.</p>
+                <p>Higher levels require longer combinations and filter out large, obvious advantages. Generation can take a little time.</p>
+                <p id="puzzleStatus" role="status" aria-live="polite">Choose New puzzle to begin.</p>
+                <p id="puzzleProgress"></p>
+                <div id="puzzleMoves" class="puzzle-moves"></div>
+                <div id="puzzleSolution"></div>
+                <p id="puzzleStats"></p>
+            </div></section>
+        </main>
         <main class="training-hub" id="trainingHub" style="display:none">
             <div class="training-hub-inner">
                 <!-- Training category selector rendered by JS -->
@@ -394,6 +423,7 @@
     <script src="js/engine.js"></script>
     <script src="js/coach.js"></script>
     <script src="js/trainer.js"></script>
+    <script src="js/puzzles.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>
