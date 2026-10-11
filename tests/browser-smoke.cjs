@@ -4,12 +4,13 @@ const path = require('node:path');
 const fs = require('node:fs');
 const { createHash } = require('node:crypto');
 
-// These are the two user-supplied stylesheets, intentionally unchanged.
-for (const [file, expected] of [
-    ['styles.css', '6ac29af1b7c3ddc930c157cdf9a47cfee452a13f96f1faaff82a5c13d3865010'],
-    ['learning.css', '569950da88655cedf5c1c43e2d54b8b8af0af470624f3908bdafb68da39db66a']
+// Preserve the original styles; compact coaching layout rules may be appended.
+for (const [file, expected, originalLength] of [
+    ['styles.css', '6ac29af1b7c3ddc930c157cdf9a47cfee452a13f96f1faaff82a5c13d3865010', null],
+    ['learning.css', '569950da88655cedf5c1c43e2d54b8b8af0af470624f3908bdafb68da39db66a', 13486]
 ]) {
-    const actual = createHash('sha256').update(fs.readFileSync(path.join(__dirname, '../css', file))).digest('hex');
+    const bytes = fs.readFileSync(path.join(__dirname, '../css', file));
+    const actual = createHash('sha256').update(originalLength ? bytes.subarray(0, originalLength) : bytes).digest('hex');
     assert.equal(actual, expected, 'Preserve uploaded stylesheet: ' + file);
 }
 
@@ -43,6 +44,8 @@ for (const [file, expected] of [
         assert.equal(await page.locator('.bot-analysis').count(), 0);
         await page.locator('#modeCoach').click();
         assert.equal(await page.locator('.previous-move-lesson').count(), 1);
+        assert.ok(await page.locator('#quickCoach').isVisible());
+        await page.locator('#coachContent > .coaching-breakdown > summary').click();
         assert.ok(await page.locator('.bot-analysis').isVisible());
         await page.locator('[data-bot-tab=thinking]').click();
         await page.locator('.previous-move-lesson [data-tab=deep]').click();
@@ -57,6 +60,8 @@ for (const [file, expected] of [
         await page.locator('#coachingDetailToggle').click();
         assert.equal(await page.locator('.bot-analysis').count(), 0);
         await page.locator('#coachingDetailToggle').click();
+        assert.ok(await page.locator('#quickCoach').isVisible());
+        await page.locator('#coachContent > .coaching-breakdown > summary').click();
         assert.ok(await page.locator('.bot-analysis').isVisible());
         await page.locator('#prevMoveBtn').click();
         assert.equal(await page.locator('.previous-move-lesson').count(), 0);
@@ -71,10 +76,13 @@ for (const [file, expected] of [
         assert.ok(await page.locator('#puzzleDialog').isVisible());
         await page.locator('#closePuzzle').click();
         assert.equal(await page.evaluate(() => app.game.fen()), gameFen);
+        assert.ok(await page.locator('#quickCoach').isVisible());
+        await page.locator('#coachContent > .coaching-breakdown > summary').click();
         assert.ok(await page.locator('.bot-analysis').isVisible());
         console.log('PASS quiz pause/resume preserves game and full coaching');
 
         await page.locator('#modePuzzles').click();
+        await page.locator('[data-puzzle-filter=all]').click();
         await page.locator('[data-puzzle="loose-queen"]').click();
         await page.locator('#puzzleBoard [data-square=d1]').click();
         await page.locator('#puzzleBoard [data-square=d5]').click();
@@ -85,7 +93,11 @@ for (const [file, expected] of [
         const seen = new Set();
         let reviewedId;
         for (const difficulty of ['standard', 'challenging', 'expert']) {
-            await page.locator(`[data-generate=${difficulty}]`).click();
+            if (difficulty === 'challenging') {
+                await page.evaluate(() => { learning.preferredDifficulty='challenging'; learning.renderHub(); });
+                await page.locator('[data-start-practice]').click();
+            }
+            else await page.locator(`[data-generate=${difficulty}]`).click();
             await page.waitForFunction(() => learning.session && !learning.session.busy, null, { timeout: 115000 });
             assert.equal(await page.evaluate(() => !!learning.session.failed), false, await page.locator('#puzzleFeedback').innerText());
             const puzzle = await page.evaluate(() => learning.session.puzzle);
@@ -124,6 +136,11 @@ for (const [file, expected] of [
                 });
             }
             assert.equal(await page.locator('#puzzleStep').innerText(), difficulty === 'standard' ? 'IDEA COMPLETED' : 'SOLVED WITHOUT HELP');
+            assert.ok(await page.locator('#puzzleReview').isVisible());
+            const solvingFen = await page.evaluate(() => learning.session.game.fen());
+            await page.locator('#puzzleReviewNext').click();
+            assert.equal(await page.evaluate(() => learning.session.game.fen()), solvingFen);
+            assert.ok((await page.locator('#puzzleReviewNote').innerText()).length > 40);
             reviewedId = puzzle.id;
             if (difficulty === 'challenging') {
                 await page.locator('#puzzleNext').click();

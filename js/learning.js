@@ -35,6 +35,27 @@
     const label = color => color === 'w' ? 'White' : 'Black';
     const PIECE_IMAGES = {wk:'4/42/Chess_klt45.svg',wq:'1/15/Chess_qlt45.svg',wr:'7/72/Chess_rlt45.svg',wb:'b/b1/Chess_blt45.svg',wn:'7/70/Chess_nlt45.svg',wp:'4/45/Chess_plt45.svg',bk:'f/f0/Chess_kdt45.svg',bq:'4/47/Chess_qdt45.svg',br:'f/ff/Chess_rdt45.svg',bb:'9/98/Chess_bdt45.svg',bn:'e/ef/Chess_ndt45.svg',bp:'c/c7/Chess_pdt45.svg'};
     const NAMES = {k:'king',q:'queen',r:'rook',b:'bishop',n:'knight',p:'pawn'};
+    function plain(text, limit=28) {
+        const node=document.createElement('div');node.innerHTML=text||'';
+        const words=node.textContent.trim().split(/\s+/);
+        return words.slice(0,limit).join(' ')+(words.length>limit?'…':'');
+    }
+    function firstThought(text) {
+        const node=document.createElement('div');node.innerHTML=text||'';
+        return plain(node.textContent.trim().split(/(?<=[.!?])\s+/)[0],24);
+    }
+    function moveLesson(move, game) {
+        let text=`${label(move.color)} plays ${move.san}`;
+        if(move.captured)text+=`, capturing the ${NAMES[move.captured]} on ${move.to}`;
+        else if(move.flags.includes('k')||move.flags.includes('q'))text+=', bringing the king to safety and activating the rook';
+        else text+=`, moving the ${NAMES[move.piece]} to ${move.to}`;
+        if(move.promotion)text+=` and promoting to a ${NAMES[move.promotion]}`;
+        text+='.';
+        if(game.in_checkmate())text+=' Checkmate: there is no legal escape, block or capture.';
+        else if(game.in_check())text+=' This is check: the opponent must answer the threat to the king.';
+        else text+=' Check what this changes before choosing the next move.';
+        return text;
+    }
     function validGenerated(p) {
         if (!p || typeof p.id !== 'string' || !p.id.startsWith('generated-') || typeof p.fen !== 'string' || !PuzzleLevels[p.difficulty] || !Array.isArray(p.line) || !new Chess().validate_fen(p.fen).valid) return false;
         const game = new Chess(p.fen);
@@ -109,7 +130,12 @@
             let storage;
             try { storage = window.localStorage; } catch (_) { storage = {getItem(){throw Error('Unavailable');},setItem(){throw Error('Unavailable');}}; }
             this.store = new LearningStore(storage);
-            this.filter = 'recommended'; this.mode = 'play'; this.session = null;
+            this.filter = 'fresh'; this.mode = 'play'; this.session = null;
+            this.preferredDifficulty='challenging';
+            const header=document.querySelector('.app-header');
+            const sizeCoach=()=>document.documentElement.style.setProperty('--coach-header-height',header.offsetHeight+'px');
+            sizeCoach();
+            if(window.ResizeObserver){this.headerObserver=new ResizeObserver(sizeCoach);this.headerObserver.observe(header);}
             this.nextQuiz = 4 + Math.floor(Math.random()*3); this.quizCount = 0; this.momentsThisGame = 0;
             this.engine = null; this.enginePromise = null; this.hintLevel = 0;
             this.fullCoaching = true;
@@ -126,7 +152,7 @@
                 if (fresh) { this.openGenerated(fresh.dataset.generate); return; }
                 const b=e.target.closest('[data-puzzle]'); if (b) this.open(this.all().find(p => p.id === b.dataset.puzzle));
             };
-            document.getElementById('learningOverview').onclick = e => { if (e.target.closest('[data-start-practice]')) this.open(this.recommended()[0]); };
+            document.getElementById('learningOverview').onclick = e => { if (e.target.closest('[data-start-practice]')) this.openGenerated(this.preferredDifficulty); };
             document.getElementById('closePuzzle').onclick = () => this.close();
             this.dialog.addEventListener('cancel', e => { e.preventDefault(); this.close(); });
             document.getElementById('puzzleHint').onclick = () => this.hint();
@@ -137,9 +163,10 @@
                     const difficulty = this.session.puzzle.difficulty;
                     this.close(); this.openGenerated(difficulty); return;
                 }
-                const id=this.session?.puzzle.id;
-                this.close(); this.open(this.recommended().find(p => p.id !== id) || this.recommended()[0]);
+                this.close(); this.openGenerated(this.preferredDifficulty);
             };
+            document.getElementById('puzzleReviewPrev').onclick=()=>this.stepReview(-1);
+            document.getElementById('puzzleReviewNext').onclick=()=>this.stepReview(1);
             document.getElementById('puzzleBoard').onclick = e => { const sq=e.target.closest('[data-square]'); if(sq) this.select(sq.dataset.square); };
             document.getElementById('puzzleBoard').addEventListener('keydown', e => {
                 const moves={ArrowLeft:-1,ArrowRight:1,ArrowUp:-8,ArrowDown:8}; if (!(e.key in moves)) return;
@@ -176,7 +203,7 @@
             this.notice(); const goal=this.goal(), data=this.store.data;
             const independent=new Set(data.attempts.filter(a=>a.clean).map(a=>a.id)).size;
             const due=this.all().filter(p=>data.results[p.id]?.due<=Date.now()).length;
-            document.getElementById('learningOverview').innerHTML=`<div class="daily-goal"><span class="eyebrow">YOUR NEXT SMALL STEP</span><h2>${SKILLS[goal].name}</h2><p>${SKILLS[goal].goal}</p><button class="btn btn-primary" data-start-practice>Start a short practice <span aria-hidden="true">→</span></button></div><div class="practice-summary"><div><strong>${independent}</strong><span>positions solved without help</span></div><div><strong>${due}</strong><span>reviews ready today</span></div><p>Try → get a clue → understand → revisit.</p></div>`;
+            document.getElementById('learningOverview').innerHTML=`<div class="daily-goal"><span class="eyebrow">A FRESH POSITION EVERY TIME</span><h2>Calculate. Understand. Repeat.</h2><p>Generate a new ${this.preferredDifficulty} challenge. Find the whole continuation, then review why each move matters.</p><button class="btn btn-primary" data-start-practice>Start a fresh challenge <span aria-hidden="true">→</span></button></div><div class="practice-summary"><div><strong>${independent}</strong><span>positions solved without help</span></div><div><strong>${due}</strong><span>reviews ready today</span></div><p>Fresh challenges to stretch you. Saved reviews to check what you remember.</p></div>`;
             const checks=data.attempts.filter(a=>a.source==='quiz');
             if(checks.length){
                 const recent=checks.slice(-3), earlier=checks.slice(0,3);
@@ -217,11 +244,13 @@
             document.querySelectorAll('.mode-tab').forEach(b=>b.setAttribute('aria-pressed',b.dataset.mode===mode));
             document.getElementById('playPanelTitle').textContent=mode==='coach'?'Your thinking routine':'Your game';
             document.getElementById('coachingDetailToggle').hidden=mode!=='coach';
+            document.getElementById('quickCoach').hidden=mode!=='coach';
             if(mode==='puzzles') this.renderHub();
             if(mode==='play'||mode==='coach') { this.app._clearArrows(); this.showGameCard(); this.onTurn(); }
             this.notice();
         }
         showGameCard(md) {
+            this.updateQuickCoach(md);
             const toggle=document.getElementById('coachingDetailToggle');
             toggle.textContent=this.fullCoaching?'Use short guidance':'Show full coaching';
             toggle.setAttribute('aria-pressed',String(this.fullCoaching));
@@ -242,6 +271,38 @@
             document.getElementById('coachContent').innerHTML=`<div class="simple-coach"><span class="eyebrow">${coach?'THINK BEFORE YOU MOVE':'FREE PLAY'}</span><h3>${coach?'What changed on the board?':'Room to find your own way.'}</h3><p>${text}</p>${coach?'<ol><li>What is my opponent threatening?</li><li>Are any pieces undefended?</li><li>What is their best reply to my move?</li></ol>':''}${last?`<div class="last-move-note">Last move: <strong>${escape(last.san)}</strong>${coach?' · Try predicting the reply.':''}</div>`:''}${review}<div class="practice-link"><strong>${this.store.data.moments.length} saved game moments</strong><p>Ready in Puzzles, even before this game ends.</p><button class="btn btn-secondary" id="openGameMoments">Explore your practice</button></div></div>`;
             document.getElementById('openGameMoments').onclick=()=>{this.filter='mistakes';this.trainer._switchMode('puzzles');};
             return true;
+        }
+        updateQuickCoach(md) {
+            const card=document.getElementById('quickCoach');
+            card.hidden=this.mode!=='coach';
+            if(card.hidden)return;
+            const current=md||this.app.moveData[this.app.viewIndex-1];
+            const index=this.app.moveData.indexOf(current);
+            const previous=current?.isPlayer?current:index>0?this.app.moveData[index-1]:null;
+            document.getElementById('quickCoachLesson').textContent=previous?.coaching
+                ? `${previous.san}: ${plain(previous.coaching.title,7)} ${firstThought(previous.coaching.suggestion||previous.coaching.message)}`
+                : 'Before moving, check your king’s safety and look for undefended pieces.';
+            const analysis=current?.botAnalysis;
+            const threat=analysis?.threatsCreated?.find(t=>!['None','none'].includes(t.piece));
+            document.getElementById('quickCoachThreat').textContent=firstThought(threat?.desc||analysis?.defensiveAdvice?.[0]?.text||'Look for your opponent’s checks, captures and threats.');
+            const fen=current?.fenAfter||this.app.game.fen();
+            const game=new Chess(fen), moves=[];
+            const pv=current?.engineLines?.[0]?.pv||(this.app._atEnd()?this.app.cachedEval?.pv:[])||[];
+            for(const u of pv.slice(0,3)){const m=game.move(moveObject(u));if(!m)break;moves.push(m.san);}
+            document.getElementById('quickCoachLineTitle').textContent=new Chess(fen).turn()===this.app.playerColor?'Consider':'Likely reply';
+            document.getElementById('quickCoachLine').textContent=moves.length?moves.join(' → '):'Choose a candidate and calculate your opponent’s strongest reply.';
+        }
+        presentCoaching(md) {
+            if(this.app._assemblingLesson)return;
+            this.updateQuickCoach(md);
+            if(!this.detailedCoaching())return;
+            const content=document.getElementById('coachContent');
+            const details=document.createElement('details');
+            details.className='move-review coaching-breakdown';
+            const summary=document.createElement('summary');
+            summary.textContent='Full lesson, threats and engine variations';
+            details.append(summary,...content.childNodes);
+            content.append(details);
         }
         capture(md) {
             if(this.momentsThisGame>=3 || md.cpLoss<180 || !md.bestMove) return;
@@ -282,6 +343,7 @@
         async evaluate(fen) { const engine=await this.getEngine();return this.withTimeout(engine.evaluate(fen,12,800)); }
         async openGenerated(difficulty='challenging') {
             if (this.session || !PuzzleLevels[difficulty]) return;
+            this.preferredDifficulty=difficulty;
             const title=difficulty[0].toUpperCase()+difficulty.slice(1)+' · Fresh challenge';
             await this.open({id:'generating',kind:'generated',difficulty,skill:'calculation',fen:new Chess().fen(),line:[],loading:true,title,prompt:'Finding a legal position with a meaningful combination. You can close this search at any time.'});
             const s=this.session;
@@ -319,7 +381,8 @@
             document.getElementById('puzzleStep').textContent='THINK FIRST';
             document.getElementById('closePuzzle').textContent=source==='quiz'?'Skip & resume':'Close';
             document.getElementById('closePuzzle').setAttribute('aria-label',source==='quiz'?'Skip quiz and resume game':'Close puzzle');
-            document.getElementById('puzzleNext').textContent=source==='quiz'?'Continue game':'Next puzzle';
+            document.getElementById('puzzleNext').textContent=source==='quiz'?'Continue game':'Next fresh challenge';
+            document.getElementById('puzzleReview').hidden=true;
             document.getElementById('puzzleNext').hidden=true;
             document.getElementById('puzzleHint').textContent='Give me a clue';
             document.getElementById('puzzleHint').hidden=false;document.getElementById('puzzleReveal').hidden=false;
@@ -351,12 +414,13 @@
         feedback(text,type='') { const el=document.getElementById('puzzleFeedback');el.textContent=text;el.className='puzzle-feedback '+type; }
         renderBoard() {
             const s=this.session;if(!s)return;
+            const display=s.review?new Chess(s.review.positions[s.review.index]):s.game;
             const black=s.puzzle.fen.split(' ')[1]==='b';const el=document.getElementById('puzzleBoard');
             const focus=document.activeElement?.dataset.square;
             const legal=s.selected?s.game.moves({square:s.selected,verbose:true}).map(m=>m.to):[];
             let html='';
             for(let r=0;r<8;r++)for(let f=0;f<8;f++){
-                const rank=black?r+1:8-r,file=black?7-f:f,sq=String.fromCharCode(97+file)+rank,p=s.game.get(sq);
+                const rank=black?r+1:8-r,file=black?7-f:f,sq=String.fromCharCode(97+file)+rank,p=display.get(sq);
                 const name=p?`${label(p.color)} ${NAMES[p.type]}`:'empty';
                 html+=`<button class="learning-square ${(file+rank)%2?'light':'dark'} ${s.selected===sq?'selected':''} ${legal.includes(sq)?'possible':''}" data-square="${sq}" aria-label="${sq}, ${name}" aria-pressed="${s.selected===sq}" ${s.busy||s.done||s.failed?'disabled':''}><span class="learning-piece ${p?.color==='w'?'white-piece':'black-piece'}" aria-hidden="true">${p?`<img src="https://upload.wikimedia.org/wikipedia/commons/${PIECE_IMAGES[p.color+p.type]}" alt="" draggable="false">`:''}</span>${f===0?`<span class="learning-rank">${rank}</span>`:''}${r===7?`<span class="learning-file">${String.fromCharCode(97+file)}</span>`:''}</button>`;
             }
@@ -376,7 +440,7 @@
         async submit(input) {
             const s=this.session;if(!s||s.busy||s.done||s.failed)return;
             const before=s.game.fen(),move=s.game.move(input);if(!move)return;
-            s.selected=null;s.busy=true;this.renderBoard();
+            s.selected=null;s.reply=null;s.busy=true;this.renderBoard();
             let correct=false;
             try {
                 if(s.puzzle.kind==='generated') {
@@ -402,8 +466,9 @@
                 }
                 s.index++;
                 if(s.puzzle.kind!=='engine'&&!s.game.in_checkmate()&&s.index<s.puzzle.line.length) {
+                    const lesson=moveLesson(move,s.game);
                     const reply=s.game.move(moveObject(s.puzzle.line[s.index++]));
-                    s.busy=false;this.feedback(`Good start. Your opponent played ${reply.san}. Now finish the idea.`,'success');
+                    s.busy=false;this.feedback(`${lesson} Your opponent replied ${reply.san}. Find the continuation (${Math.ceil(s.index/2)} of ${Math.ceil(s.puzzle.line.length/2)} moves found).`,'success');
                     document.getElementById('puzzleStep').textContent='FOLLOW THROUGH';this.renderBoard();return;
                 }
                 s.busy=false;this.finish(true, s.game.in_checkmate() && uciOf(move)!==s.puzzle.line[s.index-1] ? `${move.san} is checkmate. The king is in check with no legal escape, block, or capture. Your alternative works too.` : undefined);
@@ -416,6 +481,7 @@
             if(this.session!==s)return false;
             const candidate=move===best.bestMove?best:await evaluate(fen,[move]);
             if(this.session!==s)return false;
+            s.reply=candidate.pv?.[1];
             const good=move===best.bestMove || (best.mate!=null
                 ? best.mate>0 && candidate.mate>0 && candidate.mate<=best.mate
                 : candidate.mate!=null ? candidate.mate>0 : candidate.score>=best.score-35);
@@ -441,7 +507,11 @@
             const s=this.session;if(!s||s.done||s.busy||s.failed)return;s.hints++;
             const move=moveObject(s.puzzle.line[s.index]||s.puzzle.line[0]);
             const p=s.game.get(move.from);
-            if(s.hints===1)this.feedback(s.puzzle.clue||'Look at checks, captures, and threats. What would your opponent do next?');
+            if(s.hints===1){
+                const trial=new Chess(s.game.fen()),candidate=trial.move(move);
+                const clue=s.game.in_check()?'You are in check. Compare captures, blocks and king moves before attacking.':candidate?.captured?'Compare the available captures. Count the opponent’s recaptures before deciding what you gain.':trial.in_check()?'Look for a forcing check. Calculate how the opponent can escape, block or capture.':'Compare candidate moves and calculate the opponent’s strongest reply to each. Which continuation keeps your advantage?';
+                this.feedback(s.puzzle.clue||clue);
+            }
             else if(s.hints===2)this.feedback(`Look closely at your ${p?NAMES[p.type]:'piece'} on ${move.from}.`);
             else { const g=new Chess(s.game.fen()),m=g.move(move);this.feedback(`Try ${m?.san||move.from+'–'+move.to}. Play it, then look for your opponent’s response.`); }
             document.getElementById('puzzleHint').textContent=s.hints<2?'Another clue':'Show a move hint';
@@ -472,6 +542,32 @@
             document.getElementById('puzzleSaveNote').textContent=independent?'Saved as an independent solve. Return on a later day to check what sticks.':'Saved as guided practice. Your next review is tomorrow.';
             document.getElementById('puzzleHint').hidden=true;document.getElementById('puzzleReveal').hidden=true;document.getElementById('puzzleNext').hidden=false;
             document.getElementById('closePuzzle').textContent=s.source==='quiz'?'Resume game':'Close';this.renderBoard();document.getElementById('puzzleNext').focus();
+            this.buildReview();
+        }
+        buildReview() {
+            const s=this.session,game=new Chess(s.puzzle.fen);
+            const positions=[game.fen()],notes=['Starting position. Before revealing the first move, predict the opponent’s strongest reply.'];
+            const values={p:1,n:3,b:3,r:5,q:9,k:0},color=game.turn();
+            const material=()=>game.board().flat().reduce((sum,p)=>sum+(p?values[p.type]*(p.color===color?1:-1):0),0);
+            const before=material();
+            for(const u of (s.puzzle.kind==='engine'?s.baseline?.pv||s.puzzle.line:s.puzzle.line)){
+                const move=game.move(moveObject(u));if(!move)break;
+                positions.push(game.fen());notes.push(moveLesson(move,game));
+                if(positions.length>=12)break;
+            }
+            const gain=material()-before;
+            const result=game.in_checkmate()?'The line ends in checkmate.':gain>0?`Across this line, your net material improves by ${gain} point${gain===1?'':'s'} (pawn = 1, minor piece = 3, rook = 5, queen = 9).`:'The aim is to preserve your advantage through the opponent’s strongest replies, not just find the first move.';
+            s.review={positions,notes,index:1<positions.length?1:0,result};
+            document.getElementById('puzzleReview').hidden=false;
+            this.stepReview(0);
+        }
+        stepReview(direction) {
+            const s=this.session;if(!s?.review)return;
+            const r=s.review;r.index=Math.max(0,Math.min(r.positions.length-1,r.index+direction));
+            document.getElementById('puzzleReviewNote').textContent=`${r.index} / ${r.positions.length-1}: ${r.notes[r.index]} ${r.index===r.positions.length-1?r.result:''}`;
+            document.getElementById('puzzleReviewPrev').disabled=r.index===0;
+            document.getElementById('puzzleReviewNext').disabled=r.index===r.positions.length-1;
+            this.renderBoard();
         }
         gameHint() {
             if(this.app.thinking||this.app.over||!this.app._atEnd())return;

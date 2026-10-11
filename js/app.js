@@ -946,6 +946,7 @@
             } else {
                 this._clearArrows();
             }
+            window.learning?.presentCoaching(md);
         }
 
         /* ══════════════════════════════════════════════════
@@ -962,7 +963,9 @@
             const lesson = document.createElement('section');
             lesson.className = 'previous-move-lesson';
             if (previous?.coaching) {
-                this._showCoaching(previous.coaching, previous);
+                this._assemblingLesson = true;
+                try { this._showCoaching(previous.coaching, previous); }
+                finally { this._assemblingLesson = false; }
                 lesson.append(...document.getElementById('coachContent').childNodes);
             }
 
@@ -1110,6 +1113,7 @@
             const content = document.getElementById('coachContent');
             this._appendEngineLines(content, md.fenAfter, md.engineLines || []);
             if (lesson.childNodes.length) content.append(lesson);
+            window.learning?.presentCoaching(md);
         }
 
         _appendEngineLines(container, fen, lines) {

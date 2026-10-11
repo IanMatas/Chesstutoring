@@ -146,3 +146,17 @@ body[data-learning-mode="play"] .move-entry .move-classification { display:none;
 .move-review summary { cursor: pointer; padding: 8px 0; }
 .move-review p { margin-top: 10px; }
 body[data-learning-mode="play"] #moveList .move-entry { color: var(--text) !important; }
+
+/* Keep the actionable lesson beside the playing flow, using the existing palette. */
+.quick-coach { grid-column: 1 / -1; order: -1; position: sticky; top: var(--coach-header-height, 0px); z-index: 20; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 16px; padding: 16px 20px; background: #17221b; border: 1px solid #ffffff0d; border-radius: 12px; }
+.quick-coach strong { color: var(--learn-green); font-size: 12px; }
+.quick-coach p { color: #d7e0d7; font-size: 13px; line-height: 1.55; margin-top: 5px; overflow-wrap: anywhere; }
+.coaching-breakdown { margin-top: 0; }
+@media(max-width:860px) {
+    .quick-coach { grid-template-columns: 1fr; gap: 8px; padding: 12px 16px; }
+    .quick-coach > div { display: grid; grid-template-columns: 72px minmax(0,1fr); gap: 8px; }
+    .quick-coach p { margin: 0; }
+    body[data-learning-mode="coach"] .mode-intro { padding-top: 14px; }
+    body[data-learning-mode="coach"] .mode-intro h1 { font-size: 24px; }
+    body[data-learning-mode="coach"] .mode-intro .eyebrow, body[data-learning-mode="coach"] #modeDescription { display: none; }
+}

@@ -49,7 +49,7 @@
             <section class="learning-overview" id="learningOverview"></section>
             <div class="puzzle-filters" role="group" aria-label="Choose puzzle collection">
                 <button class="filter-btn active" data-puzzle-filter="recommended" aria-pressed="true">For you</button>
-                <button class="filter-btn" data-puzzle-filter="all" aria-pressed="false">All puzzles</button>
+                <button class="filter-btn" data-puzzle-filter="all" aria-pressed="false">Study collection</button>
                 <button class="filter-btn" data-puzzle-filter="fresh" aria-pressed="false">Endless challenges</button>
                 <button class="filter-btn" data-puzzle-filter="mistakes" aria-pressed="false">Your game moments <span id="mistakeCount">0</span></button>
                 <button class="filter-btn" data-puzzle-filter="due" aria-pressed="false">Review due</button>
@@ -64,6 +64,11 @@
 
         <!-- ═══════════════ PLAY MODE ═══════════════ -->
         <main class="main-content" id="playMode">
+            <section id="quickCoach" class="quick-coach" hidden aria-label="Coach at a glance" aria-live="polite">
+                <div><strong>Your move</strong><p id="quickCoachLesson"></p></div>
+                <div><strong>Watch for</strong><p id="quickCoachThreat"></p></div>
+                <div><strong id="quickCoachLineTitle">Next line</strong><p id="quickCoachLine"></p></div>
+            </section>
             <!-- Left Panel: Board -->
             <section class="board-section">
                 <!-- Opponent info -->
@@ -379,6 +384,13 @@
                 <p id="puzzlePrompt"></p>
                 <p class="muted">Select a piece, then its destination. Look for your opponent's reply.</p>
                 <div id="puzzleFeedback" class="puzzle-feedback" role="status" aria-live="polite"></div>
+                <div id="puzzleReview" hidden>
+                    <p id="puzzleReviewNote" class="muted" aria-live="polite"></p>
+                    <div class="puzzle-actions">
+                        <button id="puzzleReviewPrev" class="btn btn-secondary">Previous move</button>
+                        <button id="puzzleReviewNext" class="btn btn-secondary">Next move</button>
+                    </div>
+                </div>
                 <div id="puzzlePromotion" hidden><p>Promote to:</p><div class="puzzle-actions">
                     <button class="btn btn-secondary" data-promotion="q">Queen</button><button class="btn btn-secondary" data-promotion="r">Rook</button><button class="btn btn-secondary" data-promotion="b">Bishop</button><button class="btn btn-secondary" data-promotion="n">Knight</button>
                 </div></div>

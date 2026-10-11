@@ -1,7 +1,8 @@
 # Chess Tutor
 
 This version uses the supplied Free Play / Puzzles / Coach Play application as
-its base. Both supplied stylesheets are preserved unchanged. Opening lessons,
+its base. The supplied palette and typography are retained, with a compact sticky
+coaching summary added to reduce scrolling. Opening lessons,
 strategy lessons, endgames, the analysis board, saved game moments, and review
 scheduling remain available.
 
@@ -17,7 +18,9 @@ from fonts.googleapis.com / fonts.gstatic.com, with valid TLS trust.
 
 ## Coaching
 
-Free Play keeps the supplied quiet interface. Coach Play restores the full move
+Free Play keeps the supplied quiet interface. Coach Play puts a short **Your move /
+Watch for / Next line** summary above the board, where it stays visible while
+playing. Expand **Full lesson, threats and engine variations** for the full move
 lesson, classification, board analysis, threats, defense advice, and candidate
 lines. Your move's lesson remains available after the bot replies. Use **Use
 short guidance** / **Show full coaching** to switch between the supplied compact
@@ -30,8 +33,10 @@ game from that point and replaces the current game history.
 
 ## Continuous puzzle practice
 
-In the existing **Puzzles** collection, choose a fresh challenge card or the
-**Endless challenges** filter. Challenges open in the supplied puzzle dialog,
+The **Puzzles** screen defaults to **Endless challenges**. **Start a fresh
+challenge** generates a new position; **Next fresh challenge** generates another,
+even after a fixed collection puzzle. Choose a difficulty card to change level.
+The finite teaching examples remain accessible under **Study collection**. Challenges open in the supplied puzzle dialog,
 using the same board, images, buttons, hints, and solution feedback. The original
 collection, personal game moments, review queue, and Coach Play quizzes remain.
 
@@ -42,8 +47,11 @@ calibrated Elo ratings. Sound alternative moves are checked from the same root
 position; alternatives within 0.35 pawns of the best evaluation are accepted,
 while mating alternatives must preserve the mating advantage and distance.
 
-After a generated challenge, **Next puzzle** generates another at the same
-level. There is no fixed deck or puzzle-count limit. The latest 2,000 positions
+After a generated challenge, **Next fresh challenge** generates another at the same
+level. Hints direct attention to checks, captures, and recaptures. After solving
+or revealing, review each move on the original board with an explanation of its
+capture/check and the material result of the line. Reviewing does not change
+the solving history or score. There is no fixed deck or puzzle-count limit. The latest 2,000 positions
 are remembered to reduce repeats, and the latest 200 generated puzzles remain
 available for review. Existing learning progress is retained in the same browser
 storage. Repeats remain possible outside the recent window or when storage is
