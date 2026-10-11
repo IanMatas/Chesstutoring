@@ -1199,7 +1199,7 @@
             // Scroll smoothly to chessboard
             document.querySelector('.board-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-            this._stepVariation(0);
+            this._stepVariation(1);
         }
 
         _stepVariation(stepIdx) {
@@ -2035,7 +2035,7 @@
             // Show/hide sections
             document.getElementById('playMode').style.display = ['play', 'coach'].includes(mode) ? '' : 'none';
             const deepEl = document.getElementById('deepAnalysisMode');
-            if (deepEl) deepEl.style.display = mode === 'deep-analysis' ? '' : 'none';
+            if (deepEl) deepEl.style.display = 'none';
             document.getElementById('trainingHub').style.display = ['openings','midgame','endgame'].includes(mode) ? '' : 'none';
             document.getElementById('trainingSession').style.display = 'none';
 
@@ -2043,7 +2043,8 @@
             window.patterns?.onMode(mode);
             window.moveLessons?.cancel();
             if (this.app.activeVariation) this.app._exitVariationPreview();
-            if (mode === 'deep-analysis') this._initDeepAnalysisMode();
+            window.studyBoard?.onMode(mode);
+            if (mode === 'deep-analysis') return;
             else if (mode === 'openings') this._renderOpeningsHub();
             else if (mode === 'midgame') this._renderMidgameHub();
             else if (mode === 'endgame') this._renderEndgameHub();
@@ -4730,6 +4731,7 @@
         window.learning = new LearningController(window.app, window.trainer);
         window.patterns = new PatternController();
         window.moveLessons = new MoveLessons(window.app);
+        window.studyBoard = new StudyBoard(window.app);
         document.getElementById('patternShortcut').addEventListener('click', () => window.trainer._switchMode('patterns'));
     });
 })();

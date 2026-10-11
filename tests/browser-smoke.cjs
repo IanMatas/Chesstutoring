@@ -37,7 +37,7 @@ for (const [file, expected, originalLength] of [
         }
         await page.goto(process.env.CHESS_TEST_URL || 'http://127.0.0.1:8000/');
         await page.waitForFunction(() => app.cachedEval);
-        assert.equal(await page.locator('.mode-tabs .mode-tab').count(), 3);
+        assert.equal(await page.locator('.mode-tabs .mode-tab').count(), 4);
         await page.locator('#chessboard [data-square=e2]').click();
         await page.locator('#chessboard [data-square=e4]').click();
         await page.waitForFunction(() => app.moveData.length === 2 && !app.thinking);

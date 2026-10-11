@@ -141,3 +141,27 @@ position. Navigation cancels pending comparison searches.
 `node tests/move-lessons-smoke.cjs` checks actual move entry, both branches,
 prediction, a forced queen-sacrifice mate, game preservation and mobile layout.
 It uses the same environment variables as the other browser suites.
+
+## Guided coach v3 interface
+
+**Learn on the board** is now a visible main navigation item. Its default view
+replaces the old multi-tab analysis dashboard with one editable board and one
+current explanation. Select a piece and a destination to try a move; then watch
+what it allows or compare the engine alternative. Watching a line immediately
+shows its first move. Explicit Previous/Next buttons and Play sequence/Pause
+advance both sides, while Return restores the editable position. Analysis uses
+an isolated worker, and leaving the screen cancels it. The live game is preserved.
+
+Engine details are collapsed by default. Coach Play similarly shows one main
+takeaway, with threats and extra lines available on request. Pattern demonstrations
+start with a visible move and put their Previous/Next controls above the board.
+Mobile navigation exposes all four destinations rather than hiding Analysis offscreen.
+
+The header's **Guided coach · v3** label identifies this release. Local script and
+stylesheet URLs use a release query parameter to avoid reusing older cached assets.
+Publishing a GitHub commit does not by itself prove that a separately hosted site
+has deployed it; verify the version label on the actual URL in use.
+
+Run `node tests/study-board-smoke.cjs` with the same browser-test environment
+variables to check editing, replay, autoplay/pause, undo, pattern demonstrations,
+mobile layout, cancellation and live-game preservation.

@@ -235,7 +235,7 @@
         }
         onMode(mode) {
             this.mode=mode; document.body.dataset.learningMode=mode;
-            const copy={play:['YOUR BOARD. YOUR PACE.','Make your next move.','An uninterrupted game. Practice moments are saved for whenever you’re ready.'],coach:['A LITTLE GUIDANCE. A LOT OF THINKING.','Play. Pause. Discover.','The same game, with up to two short surprise quizzes. Try an idea, then continue playing.'],puzzles:['SMALL CHALLENGES. LASTING SKILLS.','Build your chess instincts.','Practice anytime. Start with a fresh puzzle, revisit a mistake, or check what you remember.']};
+            const copy={play:['YOUR BOARD. YOUR PACE.','Make your next move.','An uninterrupted game. Practice moments are saved for whenever you’re ready.'],coach:['A LITTLE GUIDANCE. A LOT OF THINKING.','Play. Pause. Discover.','Make a move, then see it explained on the board. One idea at a time.'],puzzles:['SMALL CHALLENGES. LASTING SKILLS.','Build your chess instincts.','Practice anytime. Start with a fresh puzzle, revisit a mistake, or check what you remember.']};
             const intro=document.getElementById('modeIntro'); intro.hidden=!copy[mode];
             if(copy[mode]) ['modeEyebrow','modeTitle','modeDescription'].forEach((id,i)=>document.getElementById(id).textContent=copy[mode][i]);
             document.getElementById('practiceShortcut').hidden=mode==='puzzles';
@@ -301,7 +301,7 @@
             const details=document.createElement('details');
             details.className='move-review coaching-breakdown';
             const summary=document.createElement('summary');
-            summary.textContent='Full lesson, threats and engine variations';
+            summary.textContent='Optional: detailed analysis and extra lines';
             details.append(summary,...content.childNodes);
             content.append(details);
         }

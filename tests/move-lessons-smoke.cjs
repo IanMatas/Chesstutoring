@@ -60,7 +60,7 @@ const path = require("node:path");
       /Engine alternative/,
     );
     const next = await page.evaluate(() => {
-      const m = app.activeVariation.moves[0];
+      const m = app.activeVariation.moves[app.varStepIndex];
       return m.from + m.to + (m.promotion || "");
     });
     await page.locator("#lessonPrediction").selectOption(next);

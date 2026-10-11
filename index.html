@@ -7,8 +7,8 @@
     <title>Chess Tutor | AI-Powered Chess Coach</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/styles.css">
-    <link rel="stylesheet" href="css/learning.css">
+    <link rel="stylesheet" href="css/styles.css?v=guided-v3">
+    <link rel="stylesheet" href="css/learning.css?v=guided-v3">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>♔</text></svg>">
 </head>
 <body>
@@ -18,12 +18,13 @@
             <div class="logo">
                 <span class="logo-icon">♔</span>
                 <span class="logo-text">Chess Tutor</span>
-                <span class="logo-badge">Learn by doing</span>
+                <span class="release-label">Guided coach · v3</span>
             </div>
             <nav class="mode-tabs" id="modeTabs" aria-label="Main navigation">
                 <button class="mode-tab active" data-mode="play" id="modePlay" aria-pressed="true">Free Play</button>
                 <button class="mode-tab" data-mode="puzzles" id="modePuzzles" aria-pressed="false">Puzzles</button>
                 <button class="mode-tab" data-mode="coach" id="modeCoach" aria-pressed="false">Coach Play</button>
+                <button class="mode-tab" data-mode="deep-analysis" id="modeAnalysis">Learn on the board</button>
             </nav>
             <details class="study-menu" id="studyMenu">
                 <summary>Study library</summary>
@@ -32,7 +33,6 @@
                     <button class="mode-tab" data-mode="openings">Openings</button>
                     <button class="mode-tab" data-mode="midgame">Strategy lessons</button>
                     <button class="mode-tab" data-mode="endgame">Endgames</button>
-                    <button class="mode-tab" data-mode="deep-analysis">Analysis board</button>
                 </div>
             </details>
         </header>
@@ -70,9 +70,8 @@
         <main class="main-content" id="playMode">
             <section id="quickCoach" class="quick-coach" hidden aria-label="Coach at a glance" aria-live="polite">
                 <div><strong>Your move</strong><p id="quickCoachLesson"></p></div>
-                <div><strong>Watch for</strong><p id="quickCoachThreat"></p></div>
                 <div class="move-why-action"><button id="showMoveWhy" class="btn btn-primary" hidden>Show why on the board</button><p id="moveWhyStatus" role="status"></p></div>
-                <div><strong id="quickCoachLineTitle">Next line</strong><p id="quickCoachLine"></p></div>
+                <details class="coach-extra"><summary>Threat and next line</summary><div><strong>Watch for</strong><p id="quickCoachThreat"></p></div><div><strong id="quickCoachLineTitle">Next line</strong><p id="quickCoachLine"></p></div></details>
             </section>
             <!-- Left Panel: Board -->
             <section class="board-section">
@@ -212,6 +211,22 @@
         </main>
 
         <!-- ═══════════════ DEEP ANALYSIS & STRATEGY MODE ═══════════════ -->
+        <main id="guidedAnalysisMode" class="learning-hub" hidden aria-label="Learn on the board">
+            <header class="study-heading"><div><span class="eyebrow">ONE POSITION. ONE IDEA.</span><h1>See why a move works.</h1><p>Try it. Watch the reply. Compare another idea.</p></div><button class="btn btn-secondary" data-study="import">Use my current game</button></header>
+            <div class="study-layout"><section class="study-board-area">
+                <strong id="studyState" role="status"></strong><p id="studyInstruction"></p>
+                <div id="studyBoard" class="learning-board" aria-label="Interactive study board"></div>
+                <div id="studyPromotion" hidden><p>Choose your promotion</p><button class="btn" data-promote="q">Queen</button><button class="btn" data-promote="r">Rook</button><button class="btn" data-promote="b">Bishop</button><button class="btn" data-promote="n">Knight</button></div>
+                <div class="pattern-actions"><button class="btn btn-secondary" id="studyUndo" data-study="undo">Undo move</button><button class="btn btn-secondary" data-study="flip">Turn board around</button><button class="btn btn-secondary" data-study="reset">Start over</button></div>
+            </section><section class="study-lesson" aria-label="Current lesson">
+                <span class="eyebrow">WHAT TO NOTICE</span><p id="studyExplanation" aria-live="polite"></p>
+                <div id="studyChoices" class="study-actions"><button class="btn btn-primary" id="studyPlayed" data-study="played" hidden>Watch what my move allows</button><button class="btn btn-primary" id="studyBest" data-study="best">Show the engine’s idea</button></div>
+                <div id="studyReplayControls" hidden><div class="pattern-actions"><button class="btn btn-secondary" id="studyPrev" data-study="prev">Previous move</button><button class="btn btn-primary" id="studyNext" data-study="next">Next move →</button><button class="btn btn-secondary" id="studyAuto" data-study="auto">Play sequence</button></div><button class="btn btn-secondary" data-study="return">Return and try my own move</button></div>
+                <button class="btn btn-secondary" data-study="retry" id="studyRetry" hidden>Retry analysis</button>
+                <details class="study-details"><summary>Engine assessment explained</summary><p id="studyDetail">An estimate compares positions; it is not a guaranteed result.</p></details>
+                <div class="study-next"><h2>Want a guided lesson?</h2><p>Practice attacks, defenses and sacrifices one step at a time.</p><button class="btn btn-secondary" data-study="patterns">Choose a pattern lesson</button></div>
+            </section></div>
+        </main>
         <main class="main-content deep-analysis-view" id="deepAnalysisMode" style="display:none">
             <!-- Left: Board + Tools -->
             <section class="board-section">
@@ -458,14 +473,15 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
-    <script src="js/sounds.js"></script>
-    <script src="js/engine.js"></script>
-    <script src="js/coach.js"></script>
-    <script src="js/trainer.js"></script>
-    <script src="js/puzzles.js"></script>
-    <script src="js/learning.js"></script>
-    <script src="js/patterns.js"></script>
-    <script src="js/move-lessons.js"></script>
-    <script src="js/app.js"></script>
+    <script src="js/sounds.js?v=guided-v3"></script>
+    <script src="js/engine.js?v=guided-v3"></script>
+    <script src="js/coach.js?v=guided-v3"></script>
+    <script src="js/trainer.js?v=guided-v3"></script>
+    <script src="js/puzzles.js?v=guided-v3"></script>
+    <script src="js/learning.js?v=guided-v3"></script>
+    <script src="js/patterns.js?v=guided-v3"></script>
+    <script src="js/move-lessons.js?v=guided-v3"></script>
+    <script src="js/study-board.js?v=guided-v3"></script>
+    <script src="js/app.js?v=guided-v3"></script>
 </body>
 </html>

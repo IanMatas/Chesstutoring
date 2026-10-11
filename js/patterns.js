@@ -369,7 +369,7 @@
       this.cancel();
       this.lesson = LESSONS.find((l) => l.id === id);
       this.orientation = new Chess(this.lesson.fen).turn();
-      this.exampleIndex = 0;
+      this.exampleIndex = 1;
       this.exampleStep(0);
     }
     exampleStep(delta) {
@@ -388,6 +388,8 @@
         g.fen(),
         `Example · move ${this.exampleIndex} of ${l.line.length}`,
       );
+      const controls=this.el.querySelector(".pattern-actions");
+      this.el.querySelector("#patternBoard").before(controls);
     }
     async timed(p) {
       let timer;
