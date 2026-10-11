@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/learning.css">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>♔</text></svg>">
 </head>
 <body>
@@ -17,32 +18,49 @@
             <div class="logo">
                 <span class="logo-icon">♔</span>
                 <span class="logo-text">Chess Tutor</span>
-                <span class="logo-badge">AI Coach</span>
+                <span class="logo-badge">Learn by doing</span>
             </div>
-            <nav class="mode-tabs" id="modeTabs">
-                <button class="mode-tab active" data-mode="play" id="modePlay">
-                    <span class="mode-tab-icon">⚔️</span>
-                    <span class="mode-tab-label">Play & Learn</span>
-                </button>
-                <button class="mode-tab" data-mode="puzzles" id="modePuzzles" aria-label="Endless Puzzles"><span class="mode-tab-icon">🧩</span><span class="mode-tab-label">Endless Puzzles</span></button>
-                <button class="mode-tab" data-mode="deep-analysis" id="modeDeepAnalysis">
-                    <span class="mode-tab-icon">🔍</span>
-                    <span class="mode-tab-label">Deep Strategy & Midgame</span>
-                </button>
-                <button class="mode-tab" data-mode="openings" id="modeOpenings">
-                    <span class="mode-tab-icon">📖</span>
-                    <span class="mode-tab-label">Openings</span>
-                </button>
-                <button class="mode-tab" data-mode="midgame" id="modeMidgame">
-                    <span class="mode-tab-icon">⚡</span>
-                    <span class="mode-tab-label">Scenarios</span>
-                </button>
-                <button class="mode-tab" data-mode="endgame" id="modeEndgame">
-                    <span class="mode-tab-icon">👑</span>
-                    <span class="mode-tab-label">Endgame</span>
-                </button>
+            <nav class="mode-tabs" id="modeTabs" aria-label="Main navigation">
+                <button class="mode-tab active" data-mode="play" id="modePlay" aria-pressed="true">Free Play</button>
+                <button class="mode-tab" data-mode="puzzles" id="modePuzzles" aria-pressed="false">Puzzles</button>
+                <button class="mode-tab" data-mode="coach" id="modeCoach" aria-pressed="false">Coach Play</button>
             </nav>
+            <details class="study-menu" id="studyMenu">
+                <summary>Study library</summary>
+                <div class="study-menu-content">
+                    <button class="mode-tab" data-mode="openings">Openings</button>
+                    <button class="mode-tab" data-mode="midgame">Strategy lessons</button>
+                    <button class="mode-tab" data-mode="endgame">Endgames</button>
+                    <button class="mode-tab" data-mode="deep-analysis">Analysis board</button>
+                </div>
+            </details>
         </header>
+
+        <section class="mode-intro" id="modeIntro" aria-labelledby="modeTitle">
+            <div><span class="eyebrow" id="modeEyebrow">YOUR BOARD. YOUR PACE.</span>
+                <h1 id="modeTitle">Make your next move.</h1>
+                <p id="modeDescription">An uninterrupted game. Practice moments are saved for whenever you're ready.</p>
+            </div>
+            <button class="btn btn-secondary" id="practiceShortcut">Practice a puzzle <span aria-hidden="true">↗</span></button>
+        </section>
+        <p id="storageNotice" class="storage-notice" role="status" hidden></p>
+
+        <main id="puzzlesMode" class="learning-hub" style="display:none" aria-label="Puzzle practice">
+            <section class="learning-overview" id="learningOverview"></section>
+            <div class="puzzle-filters" role="group" aria-label="Choose puzzle collection">
+                <button class="filter-btn active" data-puzzle-filter="recommended" aria-pressed="true">For you</button>
+                <button class="filter-btn" data-puzzle-filter="all" aria-pressed="false">All puzzles</button>
+                <button class="filter-btn" data-puzzle-filter="fresh" aria-pressed="false">Endless challenges</button>
+                <button class="filter-btn" data-puzzle-filter="mistakes" aria-pressed="false">Your game moments <span id="mistakeCount">0</span></button>
+                <button class="filter-btn" data-puzzle-filter="due" aria-pressed="false">Review due</button>
+            </div>
+            <div id="puzzleCollection" class="puzzle-collection"></div>
+            <section class="learning-progress" aria-labelledby="progressTitle">
+                <div class="section-heading"><h2 id="progressTitle">Skills you're building</h2><span>Saved on this browser</span></div>
+                <p class="muted">First-try solves use no hints. Later reviews check what you remember after at least a day.</p>
+                <div id="skillProgress" class="skill-progress"></div>
+            </section>
+        </main>
 
         <!-- ═══════════════ PLAY MODE ═══════════════ -->
         <main class="main-content" id="playMode">
@@ -87,7 +105,7 @@
                                 <button id="varNextBtn" class="nav-btn btn-sm" title="Next move">▶</button>
                                 <button id="varEndBtn" class="nav-btn btn-sm" title="End of line">⏭</button>
                                 <button id="varExitBtn" class="btn btn-secondary btn-sm">↩ Back to Game</button>
-                                <button id="varPlayVsBotBtn" class="btn btn-accent btn-sm" title="Starts a new practice game from the displayed position">🤖 Practice this position</button>
+                                <button id="varPlayVsBotBtn" class="btn btn-accent btn-sm">🤖 Play vs Bot</button>
                             </div>
                         </div>
                     </div>
@@ -142,8 +160,9 @@
                     <div class="coach-header">
                         <div class="coach-avatar">🎓</div>
                         <div class="coach-title">
-                            <h2>Coach Analysis</h2>
+                            <h2 id="playPanelTitle">Your game</h2>
                             <span class="coach-status" id="coachStatus">Ready to analyze</span>
+                            <button class="btn btn-ghost" id="coachingDetailToggle" hidden aria-pressed="true">Use short guidance</button>
                         </div>
                     </div>
                     <div class="coach-content" id="coachContent">
@@ -287,34 +306,6 @@
         </main>
 
         <!-- ═══════════════ TRAINING MODE ═══════════════ -->
-        <main class="main-content" id="puzzleMode" style="display:none">
-            <section class="board-section">
-                <h2>Endless Puzzles</h2>
-                <p id="puzzleTurn">Find the strongest continuation.</p>
-                <div id="puzzleBoard" class="chessboard puzzle-board" aria-label="Puzzle chessboard"></div>
-                <div class="board-controls-row puzzle-controls">
-                    <label>Difficulty <select id="puzzleDifficulty" class="styled-select"><option value="standard">Standard · 2 moves</option><option value="challenging" selected>Challenging · 3 moves</option><option value="expert">Expert · 4 moves</option></select></label>
-                    <label>Promote to <select id="puzzlePromotion" class="styled-select"><option value="q">Queen</option><option value="r">Rook</option><option value="b">Bishop</option><option value="n">Knight</option></select></label>
-                </div>
-                <div class="board-controls-row puzzle-controls">
-                    <button id="puzzleNext" class="btn btn-primary">New puzzle</button>
-                    <button id="puzzleHint" class="btn btn-secondary">Hint</button>
-                    <button id="puzzleReveal" class="btn btn-secondary">Show solution</button>
-                    <button id="puzzleRestart" class="btn btn-ghost">Retry</button>
-                    <button id="puzzleCancel" class="btn btn-ghost" hidden>Cancel search</button>
-                </div>
-            </section>
-            <section class="coach-section"><div class="coach-panel puzzle-guide">
-                <h3>Find it. Calculate it. Play it.</h3>
-                <p>Fresh positions from randomized legal games, checked by Stockfish. Keep finding the strongest moves against the engine’s replies. No fixed deck to finish.</p>
-                <p>Higher levels require longer combinations and filter out large, obvious advantages. Generation can take a little time.</p>
-                <p id="puzzleStatus" role="status" aria-live="polite">Choose New puzzle to begin.</p>
-                <p id="puzzleProgress"></p>
-                <div id="puzzleMoves" class="puzzle-moves"></div>
-                <div id="puzzleSolution"></div>
-                <p id="puzzleStats"></p>
-            </div></section>
-        </main>
         <main class="training-hub" id="trainingHub" style="display:none">
             <div class="training-hub-inner">
                 <!-- Training category selector rendered by JS -->
@@ -376,6 +367,31 @@
         </main>
     </div>
 
+    <dialog id="puzzleDialog" class="puzzle-dialog" aria-labelledby="puzzleTitle" aria-describedby="puzzlePrompt">
+        <div class="puzzle-dialog-header">
+            <div><span class="eyebrow" id="puzzleContext">PUZZLE PRACTICE</span><h2 id="puzzleTitle"></h2></div>
+            <button class="btn btn-ghost" id="closePuzzle" aria-label="Close puzzle">Close</button>
+        </div>
+        <div class="puzzle-workspace">
+            <div><div class="puzzle-turn" id="puzzleTurn"></div><div id="puzzleBoard" class="learning-board" role="group" aria-label="Puzzle chessboard"></div></div>
+            <section class="puzzle-guide">
+                <span class="lesson-step" id="puzzleStep">THINK FIRST</span>
+                <p id="puzzlePrompt"></p>
+                <p class="muted">Select a piece, then its destination. Look for your opponent's reply.</p>
+                <div id="puzzleFeedback" class="puzzle-feedback" role="status" aria-live="polite"></div>
+                <div id="puzzlePromotion" hidden><p>Promote to:</p><div class="puzzle-actions">
+                    <button class="btn btn-secondary" data-promotion="q">Queen</button><button class="btn btn-secondary" data-promotion="r">Rook</button><button class="btn btn-secondary" data-promotion="b">Bishop</button><button class="btn btn-secondary" data-promotion="n">Knight</button>
+                </div></div>
+                <div class="puzzle-actions">
+                    <button class="btn btn-secondary" id="puzzleHint">Give me a clue</button>
+                    <button class="btn btn-ghost" id="puzzleReveal">Show the line</button>
+                    <button class="btn btn-primary" id="puzzleNext" hidden>Next puzzle</button>
+                </div>
+                <p class="muted small" id="puzzleSaveNote">Take your time. Hints count as guided practice.</p>
+            </section>
+        </div>
+    </dialog>
+
     <!-- New Game Modal -->
     <div class="modal-overlay" id="newGameModal">
         <div class="modal">
@@ -424,6 +440,7 @@
     <script src="js/coach.js"></script>
     <script src="js/trainer.js"></script>
     <script src="js/puzzles.js"></script>
+    <script src="js/learning.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>

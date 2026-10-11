@@ -263,6 +263,7 @@
 
             /* Keyboard navigation */
             document.addEventListener('keydown', e => {
+                if (window.learning?.session || !['play','coach'].includes(window.trainer?.currentMode || 'play')) return;
                 if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
                 switch (e.key) {
                     case 'ArrowLeft':  e.preventDefault(); this._goPrev();  break;
@@ -312,6 +313,7 @@
         _atEnd() { return this.viewIndex === this.posHistory.length - 1; }
 
         _goToPosition(idx) {
+            if (this.thinking || window.learning?.session) return;
             idx = Math.max(0, Math.min(idx, this.posHistory.length - 1));
             if (idx === this.viewIndex) return;
             this.viewIndex = idx;
@@ -507,10 +509,12 @@
            Player move execution & analysis
            ══════════════════════════════════════════════════ */
         async _playerMove(moveObj) {
+            if (this.thinking || this.over || window.learning?.session) return;
+            this.thinking = true;
             // Promotion?
             if (moveObj.flags && moveObj.flags.includes('p')) {
                 const promo = await this._promotionDialog();
-                if (!promo) { this._deselect(); return; }
+                if (!promo) { this.thinking = false; this._deselect(); return; }
                 moveObj = { from: moveObj.from, to: moveObj.to, promotion: promo };
             }
 
@@ -519,7 +523,7 @@
 
             // Execute move
             const move = this.game.move({ from: moveObj.from, to: moveObj.to, promotion: moveObj.promotion });
-            if (!move) { this._deselect(); return; }
+            if (!move) { this.thinking = false; this._deselect(); return; }
 
             // Record in history
             const newFen = this.game.fen();
@@ -573,16 +577,17 @@
                 captured: move.captured || null,
                 isPlayer: true, classification: coaching.classification,
                 coaching, phase: coaching.phase,
-                boardSituation, futureVariations, engineLines: multiPv,
+                boardSituation, futureVariations, engineLines: multiPv, replyLine: evalAfter.pv || [],
                 cpLoss, evalBefore: cpBefore, evalAfter: -cpAfterRaw, bestMove: evalBefore.bestMove || '',
                 fenBefore: this.posHistory[this.posHistory.length - 2],
                 fenAfter: newFen
             };
             this.moveData.push(md);
+            window.learning?.capture(md);
 
             // UI — coaching display (arrows are drawn inside _showCoaching)
             this._showCoaching(coaching, md);
-            ChessSounds.playClassificationSound(coaching.classification);
+            if (window.learning?.mode === 'coach') ChessSounds.playClassificationSound(coaching.classification);
             this._rebuildHistory();
 
             // Eval bar (White's perspective)
@@ -597,6 +602,7 @@
             this._status('Bot is thinking…');
             await this._botMove();
             this.thinking = false;
+            window.learning?.onTurn();
         }
 
         /* ══════════════════════════════════════════════════
@@ -691,6 +697,7 @@
            3. Rating & Move Polish
            ══════════════════════════════════════════════════ */
         _showCoaching(c, md) {
+            if (window.learning && !window.learning.detailedCoaching()) { this._clearArrows(); window.learning.showGameCard(md); return; }
             const col = this.coach.color(c.classification);
             const isBad = ['inaccuracy','mistake','blunder'].includes(c.classification);
             const hasBest = md.bestMove && md.bestMove.length >= 4;
@@ -742,16 +749,7 @@
                 deepHtml = '<div class="deep-section"><div class="deep-section-content" style="opacity:0.6">Analysis not available for this move.</div></div>';
             }
 
-            // Live rating update
-            const ratingData = this.coach.estimateRating(this.moveData);
-            let ratingBadge = '';
-            if (ratingData.rating) {
-                ratingBadge = `<div class="live-rating-badge">
-                    <span class="rating-label">Est. Rating</span>
-                    <span class="rating-value">${ratingData.rating}</span>
-                    <span class="rating-accuracy">${ratingData.accuracy}% accuracy</span>
-                </div>`;
-            }
+            const ratingBadge = '';
 
             document.getElementById('coachContent').innerHTML = `
                 <div class="coaching-card ${c.classification} animate-in" style="--accent:${col}">
@@ -763,7 +761,7 @@
                     <div class="coach-tabs">
                         <button class="coach-tab active" data-tab="situation">🎓 Lesson & Board Radar</button>
                         <button class="coach-tab" data-tab="variations">🔮 Move continuations (${variations.length})</button>
-                        <button class="coach-tab" data-tab="deep">📊 Polish & Rating</button>
+                        <button class="coach-tab" data-tab="deep">📊 Further analysis</button>
                     </div>
 
                     <!-- TAB 1: Situation & Lesson -->
@@ -823,7 +821,7 @@
                     <!-- TAB 2: Future Variations -->
                     <div class="coach-tab-content" id="coachVariationsTab" style="display:none">
                         <p style="font-size:12.5px;color:var(--text-muted);margin:0 0 10px 0;line-height:1.5">
-                            These <strong>${variations.length} continuations</strong> start after your move, with your opponent to play. Calculate both sides of each line:
+                            These <strong>${variations.length} continuations</strong> start after your move, with your opponent to play. Calculate both sides:
                         </p>
 
                         <div style="display:flex;flex-direction:column;gap:10px">
@@ -882,9 +880,9 @@
                 </div>`;
 
             // Tab switching
-            document.querySelectorAll('.coach-tab').forEach(tab => {
+            document.querySelectorAll('.coach-tab[data-tab]').forEach(tab => {
                 tab.addEventListener('click', () => {
-                    document.querySelectorAll('.coach-tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.coach-tab[data-tab]').forEach(t => t.classList.remove('active'));
                     tab.classList.add('active');
                     const which = tab.dataset.tab;
                     document.getElementById('coachSituationTab').style.display = which === 'situation' ? '' : 'none';
@@ -897,7 +895,7 @@
             const jumpBtn = document.getElementById('jumpToVariationsBtn');
             if (jumpBtn) {
                 jumpBtn.addEventListener('click', () => {
-                    document.querySelectorAll('.coach-tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.coach-tab[data-tab]').forEach(t => t.classList.remove('active'));
                     document.querySelector('.coach-tab[data-tab="variations"]')?.classList.add('active');
                     document.getElementById('coachSituationTab').style.display = 'none';
                     document.getElementById('coachVariationsTab').style.display = '';
@@ -948,7 +946,6 @@
             } else {
                 this._clearArrows();
             }
-            this._appendEngineLines(document.getElementById('coachContent'), md.fenAfter, md.engineLines || []);
         }
 
         /* ══════════════════════════════════════════════════
@@ -956,6 +953,7 @@
            Shows what the bot did, why, threats, and defense tips
            ══════════════════════════════════════════════════ */
         _showBotCoaching(analysis, md) {
+            if (window.learning && !window.learning.detailedCoaching()) { this._clearArrows(); window.learning.showGameCard(); return; }
             const a = analysis;
             const dl = a.dangerLevel;
             // Keep the last player lesson alive when the bot replies, including its controls.
@@ -1117,7 +1115,7 @@
         _appendEngineLines(container, fen, lines) {
             if (!fen || !lines.length) return;
             const section = document.createElement('section');
-            section.className = 'live-engine-lines';
+            section.className = 'simple-coach live-engine-lines';
             const side = new Chess(fen).turn() === 'w' ? 'White' : 'Black';
             section.innerHTML = `<h3>Engine lines · ${side} to move</h3><p>Evaluations from White’s perspective. Explore a line on the board; moves are predictions, not forced replies.</p>`;
             lines.forEach((line, index) => {
@@ -1135,11 +1133,20 @@
                 if (!moves.length) return;
                 const sign = new Chess(fen).turn() === 'w' ? 1 : -1;
                 const evaluation = this.coach.formatEval((line.score || 0) * sign, line.mate == null ? null : line.mate * sign);
+                const review = document.createElement('details');
+                review.className = 'move-review';
+                const summary = document.createElement('summary');
+                summary.textContent = `Line ${index + 1}: ${moves[0].san} · ${evaluation}`;
+                review.append(summary);
+                const text = document.createElement('p');
+                text.textContent = `${notation.join(' ')} (depth ${line.depth})`;
+                review.append(text);
                 const button = document.createElement('button');
                 button.className = 'engine-line btn btn-secondary';
-                button.textContent = `${index + 1}. ${evaluation} · ${notation.join(' ')} (depth ${line.depth})`;
+                button.textContent = 'Explore this line';
                 button.addEventListener('click', () => this._previewVariation({ title: `Candidate ${index + 1}: ${moves[0].san}`, whyBetter: `Engine continuation, evaluation ${evaluation} for White. Opponent replies are included.`, positions, moves }));
-                section.append(button);
+                review.append(button);
+                section.append(review);
             });
             container.prepend(section);
         }
@@ -1174,9 +1181,9 @@
 
         _previewVariation(variation) {
             if (!variation || !variation.moves || variation.moves.length === 0) return;
+            ChessSounds.tabSwitch();
             this._cancelDrag();
             this._deselect(true);
-            ChessSounds.tabSwitch();
             this.activeVariation = variation;
             this.varStepIndex = 0;
 
@@ -1477,6 +1484,7 @@
            Hint
            ══════════════════════════════════════════════════ */
         async _hint() {
+            if (window.learning) return window.learning.gameHint();
             if (this.thinking || this.over || !this._atEnd()) return;
             ChessSounds.hint();
             if (this.game.turn() !== this.playerColor) return;
@@ -1694,6 +1702,9 @@
         _hideModal() { document.getElementById('newGameModal').classList.remove('active'); }
 
         async _startNew() {
+            if (this.thinking || window.learning?.session) return;
+            this.thinking = true;
+            window.learning?.resetGame();
             const btn = document.querySelector('.color-btn.active');
             let col = btn ? btn.dataset.color : 'white';
             if (col === 'random') col = Math.random() > 0.5 ? 'white' : 'black';
@@ -1706,7 +1717,7 @@
             await this._syncBotSkill();
 
             this.game = new Chess();
-            this.thinking = false; this.over = false; this.cachedEval = null;
+            this.thinking = true; this.over = false; this.cachedEval = null;
             this.flipped = this.playerColor === 'b';
             this._resetHistory();
             this._clearCheckmateVisuals();
@@ -1734,10 +1745,13 @@
             }
             this._status('Your turn');
             document.getElementById('playerStatus').textContent = 'Your turn';
+            this.thinking = false;
+            window.learning?.showGameCard();
+            window.learning?.onTurn();
         }
 
         /* ══════════════════════════════════════════════════
-           Game Over — with rating estimation & checkmate display
+           Game Over — review prompt & checkmate display
            ══════════════════════════════════════════════════ */
         _gameOver() {
             this.over = true;
@@ -1772,26 +1786,8 @@
             classes.forEach(c => { if(counts[c]) summary += `<div class="summary-item"><span class="summary-dot" style="background:${this.coach.color(c)}"></span><span>${c[0].toUpperCase()+c.slice(1)}</span><span class="summary-count">${counts[c]}</span></div>`; });
             summary += '</div>';
 
-            // Rating estimation
-            const ratingData = this.coach.estimateRating(this.moveData);
-            let ratingHtml = '';
-            if (ratingData.rating) {
-                const tierColor = ratingData.rating >= 2000 ? '#ffd700' : ratingData.rating >= 1600 ? '#96bc4b' :
-                                  ratingData.rating >= 1200 ? '#5c8bb0' : '#e6a827';
-                ratingHtml = `
-                    <div class="game-over-rating">
-                        <div class="rating-circle" style="--tier-color:${tierColor}">
-                            <span class="rating-number">${ratingData.rating}</span>
-                            <span class="rating-tier">${ratingData.tier}</span>
-                        </div>
-                        <div class="rating-stats">
-                            <div class="rating-stat"><span class="stat-label">Accuracy</span><span class="stat-value" style="color:#96bc4b">${ratingData.accuracy}%</span></div>
-                            <div class="rating-stat"><span class="stat-label">Avg CP Loss</span><span class="stat-value">${ratingData.acpl}</span></div>
-                            <div class="rating-stat"><span class="stat-label">Moves Analyzed</span><span class="stat-value">${ratingData.totalMoves}</span></div>
-                            <div class="rating-stat"><span class="stat-label">Confidence</span><span class="stat-value">${ratingData.confidence}</span></div>
-                        </div>
-                    </div>`;
-            }
+            const saved = window.learning?.store.data.moments.length || 0;
+            const ratingHtml = `<div class="simple-game-review"><h3>Your next learning moment</h3><p>${saved} positions are saved in Puzzles. Try them before revealing a hint, then revisit them on a later day.</p><button class="btn btn-accent" id="gameOverPracticeBtn">Practice your game moments</button></div>`;
 
             // Weakness analysis
             const weakness = this.coach.analyzeWeaknesses(this.moveData);
@@ -1861,6 +1857,7 @@
                     </div>
                 </div>`;
 
+            document.getElementById('gameOverPracticeBtn')?.addEventListener('click', () => { window.learning.filter = 'mistakes'; window.trainer._switchMode('puzzles'); });
             document.getElementById('gameOverNewBtn').addEventListener('click', () => this._showModal());
             const gameOverUndoBtn = document.getElementById('gameOverUndoBtn');
             if (gameOverUndoBtn) {
@@ -2013,6 +2010,9 @@
         }
 
         _switchMode(mode) {
+            if (window.learning?.session) return;
+            // Keep UCI searches isolated while a move is being evaluated.
+            if (this.app.thinking && !['play', 'coach', 'puzzles'].includes(mode)) return;
             this.currentMode = mode;
             ChessSounds.tabSwitch();
 
@@ -2027,15 +2027,13 @@
             document.querySelector(`[data-mode="${mode}"]`)?.classList.add('active');
 
             // Show/hide sections
-            document.getElementById('playMode').style.display = mode === 'play' ? '' : 'none';
+            document.getElementById('playMode').style.display = ['play', 'coach'].includes(mode) ? '' : 'none';
             const deepEl = document.getElementById('deepAnalysisMode');
             if (deepEl) deepEl.style.display = mode === 'deep-analysis' ? '' : 'none';
             document.getElementById('trainingHub').style.display = ['openings','midgame','endgame'].includes(mode) ? '' : 'none';
             document.getElementById('trainingSession').style.display = 'none';
-            document.getElementById('puzzleMode').style.display = mode === 'puzzles' ? '' : 'none';
-            if (mode === 'puzzles') window.puzzles.open();
-            else window.puzzles.pause();
 
+            window.learning?.onMode(mode);
             if (mode === 'deep-analysis') this._initDeepAnalysisMode();
             else if (mode === 'openings') this._renderOpeningsHub();
             else if (mode === 'midgame') this._renderMidgameHub();
@@ -4720,6 +4718,7 @@
         // Initialize training controller
         window.trainer = new TrainingController(window.app);
         window.trainer.init();
+        window.learning = new LearningController(window.app, window.trainer);
     });
 })();
 

@@ -1,72 +1,78 @@
 # Chess Tutor
 
-A browser chess tutor with Stockfish analysis, coached games, opening lessons,
-scenarios, endgames, and generated puzzles.
+This version uses the supplied Free Play / Puzzles / Coach Play application as
+its base. Both supplied stylesheets are preserved unchanged. Opening lessons,
+strategy lessons, endgames, the analysis board, saved game moments, and review
+scheduling remain available.
 
 ## Run
-
-From this directory:
 
 ```sh
 python3 -m http.server 8000 --bind 127.0.0.1
 ```
 
-No application build or package installation is required. The browser loads
-chess.js from cdnjs.cloudflare.com and Stockfish from cdn.jsdelivr.net. Piece
-images and fonts use upload.wikimedia.org, fonts.googleapis.com, and
-fonts.gstatic.com. Those destinations must be reachable with valid TLS trust.
+There is no build step. The browser needs chess.js from cdnjs.cloudflare.com,
+Stockfish from cdn.jsdelivr.net, piece images from upload.wikimedia.org, and fonts
+from fonts.googleapis.com / fonts.gstatic.com, with valid TLS trust.
 
-## Coaching during play
+## Coaching
 
-After the bot replies, the panel keeps your previous move's complete lesson,
-classification, suggestions, board analysis, and variations. The current
-position has separate Stockfish candidate lines with evaluations from White's
-perspective. Select a line to step through it without changing the game.
-**Practice this position** starts a new practice game at the displayed position,
-with you playing the side to move; it replaces the current game history.
+Free Play keeps the supplied quiet interface. Coach Play restores the full move
+lesson, classification, board analysis, threats, defense advice, and candidate
+lines. Your move's lesson remains available after the bot replies. Use **Use
+short guidance** / **Show full coaching** to switch between the supplied compact
+coaching and the detailed analysis.
 
-## Endless Puzzles
+Expand an engine line and select **Explore this line** to step through its moves
+without changing the game. Evaluations are from White's perspective; continuations
+are predictions, not forced replies. Practicing a displayed position starts a new
+game from that point and replaces the current game history.
 
-Select **Endless Puzzles** to generate new positions from randomized legal games.
-Stockfish filters for a clear best continuation and verifies both sides of the
-solution. Standard asks for two player moves, Challenging three, and Expert four.
-Harder levels reject large initial advantages and require more decisions with a
-clear separation between the best move and alternatives. These are difficulty
-filters, not calibrated Elo ratings.
+## Continuous puzzle practice
 
-Play moves by selecting a piece and destination. Choose the promotion piece
-before promoting. The engine plays the replies and checks alternative solutions;
-a sound alternative within 0.35 pawns of its best evaluation is accepted, while
-mating positions must preserve the mating line. Hints, mistakes, and retries mark
-a completion as assisted. Revealing a solution lets you review each position.
+In the existing **Puzzles** collection, choose a fresh challenge card or the
+**Endless challenges** filter. Challenges open in the supplied puzzle dialog,
+using the same board, images, buttons, hints, and solution feedback. The original
+collection, personal game moments, review queue, and Coach Play quizzes remain.
 
-There is no fixed puzzle deck. The most recent 2,000 positions are remembered in
-local storage to reduce repetition across sessions, alongside completion counts.
-Repeats are still possible after that window or if browser storage is unavailable.
-Searching for a suitable combination may take time, especially on Expert. You
-can cancel, and a search that finds no match offers another batch rather than
-silently lowering difficulty. An active search is cancelled when you leave the puzzles tab.
+Stockfish checks positions from randomized legal games. Standard requires two
+player moves, Challenging three, and Expert four. Harder levels reject large
+initial advantages and require more meaningful decisions. These filters are not
+calibrated Elo ratings. Sound alternative moves are checked from the same root
+position; alternatives within 0.35 pawns of the best evaluation are accepted,
+while mating alternatives must preserve the mating advantage and distance.
+
+After a generated challenge, **Next puzzle** generates another at the same
+level. There is no fixed deck or puzzle-count limit. The latest 2,000 positions
+are remembered to reduce repeats, and the latest 200 generated puzzles remain
+available for review. Existing learning progress is retained in the same browser
+storage. Repeats remain possible outside the recent window or when storage is
+unavailable.
+
+Generation can take time, especially on Expert. Close the dialog to cancel.
+A search that cannot verify a suitable position offers another search without
+scoring an attempt or silently reducing difficulty. Hints and mistakes count as
+guided practice; existing spaced-review rules apply to generated challenges too.
 
 ## Browser regression checks
 
-The smoke test uses Playwright and Chromium. Install test tooling outside the
-application checkout if it is not already available:
+Keep the local server running. If Playwright is not already available:
 
 ```sh
 npm install --prefix /tmp/chess-tutor-test-tools playwright
 NODE_PATH=/tmp/chess-tutor-test-tools/node_modules node tests/browser-smoke.cjs
 ```
 
-Keep the local server running while testing. Set `CHROMIUM_PATH` for a Chromium
-binary elsewhere, or `CHESS_TEST_URL` for another server address. The test checks
-persistent coaching, line previews and history, all three puzzle levels, legal
-solutions, incorrect moves, hints, completion counts, cancellation, mobile board
-layout, and practice from a selected line. Puzzle generation tests use the real
-engine and can take several minutes.
+Set `CHROMIUM_PATH` for a browser outside `/usr/bin/chromium`, or `CHESS_TEST_URL`
+for a different server address. Checks cover stylesheet preservation, the supplied
+navigation and collection, full/short coaching, move history and previews, quiz
+pause/resume, all generated difficulty levels, incorrect moves, hints, new
+challenges, solution reveal, persistent reviews, cancellation, and mobile layout.
+The real-engine generation checks can take several minutes.
 
-In a test environment whose browser cannot trust its network proxy, an optional
-`CHESS_TEST_ASSET_DIR` may point to **previously TLS-verified** copies named
+For environments whose browser cannot trust their network proxy,
+`CHESS_TEST_ASSET_DIR` can point to previously TLS-verified copies named
 `chesstutoring-chess.js` (chess.js 0.10.3) and `chesstutoring-stockfish.js`
-(stockfish.js 10.0.2). The test serves those exact scripts through Playwright
-request routing. This tests application behavior; it does not validate direct
-browser CDN access or external images and fonts. Do not disable TLS verification.
+(stockfish.js 10.0.2). Playwright supplies those exact scripts to the page. This
+validates application behavior, not direct browser CDN connectivity or external
+images/fonts. TLS verification must remain enabled when obtaining these files.
