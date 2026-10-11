@@ -197,3 +197,21 @@ Run `node tests/free-play-smoke.cjs` with the same test environment variables.
 It covers both-side play, PGN file/text import, downloadable round-trips, branching,
 original-file preservation, nonstandard starting FENs, both bot colors, cancellation,
 and handoff to the study board. The header reads **Free play + PGN · v4**.
+
+## Concrete move reviews (v5)
+
+Coach Play now puts the consequence of a mistake in the visible coaching card:
+which reply captures which piece, on which square, what material comes back in
+the shown continuation, and whether an immediate recapture is legal. Forced or
+missed mates get their own explanation. When a short engine line establishes no
+clear tactical cause, the coach says so instead of inventing one.
+
+**Show why on the board** opens at the punishment, then plays the continuation.
+The verdict stays visible while you compare the alternative. These demonstrations
+preserve your game. Text buttons now use wrapping grid layouts rather than fixed
+icon widths, with two navigation columns on the smallest screens.
+
+The header reads **Clear move reviews · v5**. Run
+`node tests/blunder-feedback-smoke.cjs` with the browser-test environment variables
+to check an actual Qd4 queen blunder, automatic Rxd4 feedback, the mating alternative,
+a sound queen sacrifice, and button geometry at 1280, 820, 390 and 320 pixels.

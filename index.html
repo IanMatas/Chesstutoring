@@ -7,8 +7,8 @@
     <title>Chess Tutor | AI-Powered Chess Coach</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/styles.css?v=free-v4">
-    <link rel="stylesheet" href="css/learning.css?v=free-v4">
+    <link rel="stylesheet" href="css/styles.css?v=clear-v5">
+    <link rel="stylesheet" href="css/learning.css?v=clear-v5">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>♔</text></svg>">
 </head>
 <body>
@@ -18,7 +18,7 @@
             <div class="logo">
                 <span class="logo-icon">♔</span>
                 <span class="logo-text">Chess Tutor</span>
-                <span class="release-label">Free play + PGN · v4</span>
+                <span class="release-label">Clear move reviews · v5</span>
             </div>
             <nav class="mode-tabs" id="modeTabs" aria-label="Main navigation">
                 <button class="mode-tab active" data-mode="play" id="modePlay" aria-pressed="true">Free Play</button>
@@ -117,15 +117,16 @@
                             </div>
                             <div class="variation-preview-desc" id="varPreviewDesc">Attacks Black's e5 pawn with tempo</div>
                             <div id="moveLessonControls" hidden>
+                                <p id="lessonVerdict" class="lesson-verdict" role="status"></p>
                                 <div class="pattern-actions"><button id="lessonPlayed" class="btn btn-secondary">What my move allows</button><button id="lessonBest" class="btn btn-secondary">Why the alternative works</button></div>
                                 <button id="lessonAutoplay" class="btn btn-primary">Pause demonstration</button>
                                 <p id="lessonProgress" role="status"></p>
                             </div>
                             <div class="variation-preview-controls">
-                                <button id="varStartBtn" class="nav-btn btn-sm" title="Start of line">⏮</button>
-                                <button id="varPrevBtn" class="nav-btn btn-sm" title="Previous move">← Previous</button>
-                                <button id="varNextBtn" class="nav-btn btn-sm" title="Next move">Next move →</button>
-                                <button id="varEndBtn" class="nav-btn btn-sm" title="End of line">⏭</button>
+                                <button id="varStartBtn" class="btn btn-secondary btn-sm" title="Start of line">Start</button>
+                                <button id="varPrevBtn" class="btn btn-secondary btn-sm" title="Previous move">Previous</button>
+                                <button id="varNextBtn" class="btn btn-primary btn-sm" title="Next move">Next move</button>
+                                <button id="varEndBtn" class="btn btn-secondary btn-sm" title="End of line">End</button>
                                 <button id="varExitBtn" class="btn btn-secondary btn-sm">↩ Back to Game</button>
                                 <button id="varPlayVsBotBtn" class="btn btn-accent btn-sm">🤖 Play vs Bot</button>
                             </div>
@@ -480,16 +481,16 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
-    <script src="js/sounds.js?v=free-v4"></script>
-    <script src="js/engine.js?v=free-v4"></script>
-    <script src="js/coach.js?v=free-v4"></script>
-    <script src="js/trainer.js?v=free-v4"></script>
-    <script src="js/puzzles.js?v=free-v4"></script>
-    <script src="js/learning.js?v=free-v4"></script>
-    <script src="js/patterns.js?v=free-v4"></script>
-    <script src="js/move-lessons.js?v=free-v4"></script>
-    <script src="js/study-board.js?v=free-v4"></script>
-    <script src="js/free-play.js?v=free-v4"></script>
-    <script src="js/app.js?v=free-v4"></script>
+    <script src="js/sounds.js?v=clear-v5"></script>
+    <script src="js/engine.js?v=clear-v5"></script>
+    <script src="js/coach.js?v=clear-v5"></script>
+    <script src="js/trainer.js?v=clear-v5"></script>
+    <script src="js/puzzles.js?v=clear-v5"></script>
+    <script src="js/learning.js?v=clear-v5"></script>
+    <script src="js/patterns.js?v=clear-v5"></script>
+    <script src="js/move-lessons.js?v=clear-v5"></script>
+    <script src="js/study-board.js?v=clear-v5"></script>
+    <script src="js/free-play.js?v=clear-v5"></script>
+    <script src="js/app.js?v=clear-v5"></script>
 </body>
 </html>

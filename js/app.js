@@ -578,6 +578,7 @@
                 isPlayer: true, classification: coaching.classification,
                 coaching, phase: coaching.phase,
                 boardSituation, futureVariations, engineLines: multiPv, replyLine: evalAfter.pv || [],
+                bestLine: evalBefore.pv || [], bestMate: evalBefore.mate, playedMate: evalAfter.mate == null ? null : -evalAfter.mate,
                 cpLoss, evalBefore: cpBefore, evalAfter: -cpAfterRaw, bestMove: evalBefore.bestMove || '',
                 fenBefore: this.posHistory[this.posHistory.length - 2],
                 fenAfter: newFen

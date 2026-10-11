@@ -146,22 +146,16 @@
         const score = (r) =>
           r.mate != null ? (r.mate > 0 ? 10000 : -10000) : r.score;
         const gap = Math.max(0, score(best) - score(played));
-        const label = this.app.coach.classifyMove(
-          gap,
-          playedUci === best.pv[0],
-          false,
-          false,
-        );
-        const verdict =
-          gap <= 90
-            ? "This deeper comparison finds no substantial loss from your move."
-            : `At this depth, your move is rated ${label}; the engine prefers ${san(root, best.pv[0])}.`;
+        const reason=this.explain(md,played,best,gap);
         this.comparison = {
-          played: this.build(md, played, "Your move", verdict),
-          best: this.build(md, best, "Engine alternative", verdict),
+          played:this.build(md,played,"Your move",reason.text),
+          best:this.build(md,best,"Engine alternative",reason.better)
         };
-        status.textContent = verdict;
-        document.getElementById("quickCoachLesson").textContent = verdict;
+        this.comparison.played.cause=reason.text;
+        this.comparison.played.startStep=reason.step;
+        this.comparison.best.cause=reason.better;
+        status.textContent='Comparison ready. The board shows the consequence of your move.';
+        document.getElementById("quickCoachLesson").textContent=reason.text;
         document.getElementById("quickCoachThreat").textContent =
           "After your move: " +
           this.comparison.played.moves
@@ -181,6 +175,47 @@
         if (this.engine === e) this.engine = null;
         if (token === this.token) this.button.disabled = false;
       }
+    }
+    trace(fen, pv) {
+      const g=new Chess(fen), color=g.turn(), start=material(g,color), events=[];
+      for(const u of pv||[]){const m=g.move(obj(u));if(!m)break;events.push({...m,ply:events.length+1,fen:g.fen(),delta:material(g,color)-start});}
+      return {events,color,delta:material(g,color)-start,mate:g.in_checkmate()};
+    }
+    explain(md, played, best, gap=md.cpLoss||0) {
+      const line=this.trace(md.fenBefore,played.pv), alternative=this.trace(md.fenBefore,best.pv);
+      const lost=line.events.filter(m=>m.color!==line.color&&m.captured);
+      const critical=[...lost].sort((a,b)=>weights[b.captured]-weights[a.captured])[0];
+      const reply=line.events[1];
+      const label=gap>500?'Blunder':gap>200?'Mistake':gap>90?'Inaccuracy':'Move review';
+      let text='',step=reply?2:1;
+      if(played.mate<0 && !(best.mate<0)) {
+        text=`${md.san} allows a forced mate. ${reply?`${reply.san} starts the punishment. `:''}The engine finds mate in ${Math.abs(played.mate)} against your side.`;
+        step=reply?2:1;
+      } else if(critical && line.delta<0 && gap>90 && !(played.mate>0)) {
+        step=critical.ply;
+        const taken=lost.map(m=>names[m.captured]);
+        const won=line.events.filter(m=>m.color===line.color&&m.captured).map(m=>names[m.captured]);
+        text=`${md.san} allows ${critical.san}: the opponent's ${names[critical.piece]} takes your ${names[critical.captured]} on ${critical.to}. `;
+        text+=won.length?`In this line you give up ${taken.join(' and ')} for ${won.join(' and ')} — a material loss in this continuation.`:`You get no material back in the shown line.`;
+        const after=new Chess(critical.fen);
+        if(!after.moves({verbose:true}).some(m=>m.captured&&m.to===critical.to))text+=` You cannot immediately recapture on ${critical.to}.`;
+      } else if(best.mate>0 && !(played.mate>0)) {
+        text=`${md.san} misses a mating attack. ${san(md.fenBefore,best.pv[0])} starts the engine's mate-in-${best.mate} line.`;
+      } else if(gap>90) {
+        text=`${md.san} gives the opponent ${reply?.san||'a stronger position'}. No clear material loss or mate is established in this short line; the engine's preference alone does not prove a specific tactical reason.`;
+      } else if(played.mate>0) {
+        text=`${md.san} preserves a mating attack. Follow the replies to see why the material given up does not save the opponent.`;
+      } else text=`${md.san} keeps a similar engine assessment. ${reply?`The opponent's strongest illustrated reply is ${reply.san}.`:''}`;
+      let better=best.pv?.[0]?`Compare ${san(md.fenBefore,best.pv[0])}. `:'';
+      if(best.mate>0)better+=`The engine finds mate in ${best.mate} for your side.`;
+      else if(line.delta<0&&alternative.delta>=0)better+='The alternative avoids that material deficit in the shown continuation.';
+      else better+='Watch how the opponent answers this move from the same starting position.';
+      return {text:`${label}: ${text}`,better,step};
+    }
+    immediate(md) {
+      if(!md?.replyLine?.length || !md.bestLine?.length)return '';
+      const u=md.from+md.to+(md.promotion||'');
+      return this.explain(md,{pv:[u,...md.replyLine],mate:md.playedMate}, {pv:md.bestLine,mate:md.bestMate}).text;
     }
     build(md, result, title, verdict) {
       const g = new Chess(md.fenBefore),
@@ -304,6 +339,7 @@
       if (!this.comparison) return;
       this.pause();
       this.app._previewVariation(this.comparison[which]);
+      if(this.comparison[which].startStep)this.app._stepVariation(this.comparison[which].startStep);
       if (this.app.varStepIndex < this.app.activeVariation.moves.length)
         this.autoplay();
     }
@@ -314,6 +350,7 @@
         this.pause();
         return;
       }
+      document.getElementById("lessonVerdict").textContent=v.cause||v.whyBetter;
       const status = document.getElementById("lessonProgress");
       status.textContent =
         index >= v.moves.length

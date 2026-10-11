@@ -240,3 +240,17 @@ body[data-learning-mode="play"] #moveList .move-entry { color: var(--text) !impo
 #freeBoard .learning-piece img { pointer-events:auto; }
 .pgn-panel { padding:24px; display:grid; gap:12px; }.pgn-panel p { line-height:1.6; }.pgn-panel input { max-width:100%; }#pgnError { color:#efbc99; }#pgnError:empty { display:none; }
 @media(max-width:760px){#freePlayMode .study-layout { display:grid; grid-template-columns:minmax(0,1fr); }#freePlayMode .study-heading p { display:block; }#freePlayMode .study-heading .pattern-actions { margin:0; }#freeBoard { width:min(100%,44vh); margin:auto; }.free-controls { padding:18px; }.pgn-panel { padding:16px; } }
+/* Text controls need their own layout, not the fixed-width icon navigation. */
+#variationPreviewBanner { min-width:0; width:100%; box-sizing:border-box; padding:14px; }
+#variationPreviewBanner .variation-preview-header { flex-wrap:wrap; }
+#variationPreviewBanner .variation-preview-controls { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }
+#variationPreviewBanner .variation-preview-controls button { width:100%; height:auto; min-height:42px; padding:9px 6px; white-space:normal; overflow-wrap:anywhere; line-height:1.35; }
+#varExitBtn,#varPlayVsBotBtn { grid-column:span 2; }
+#moveLessonControls .pattern-actions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+#moveLessonControls button { min-width:0; white-space:normal; height:auto; min-height:42px; line-height:1.4; }
+.lesson-verdict { padding:12px; margin:0 0 12px; background:#19231d; border-left:3px solid #d9b17b; font-size:14px; line-height:1.65; }
+#playMode .board-col { min-width:0; }
+#quickCoach > .move-why-action { min-width:0; }
+#quickCoach > .move-why-action button { max-width:100%; white-space:normal; }
+@media(max-width:860px){ .quick-coach { grid-template-columns:1fr; position:static; }.quick-coach > div { display:block; }#quickCoach > .move-why-action { grid-column:1; grid-row:auto; max-width:none; } }
+@media(max-width:400px){#variationPreviewBanner .variation-preview-controls { grid-template-columns:repeat(2,minmax(0,1fr)); }}
