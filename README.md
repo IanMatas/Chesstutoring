@@ -84,3 +84,39 @@ For environments whose browser cannot trust their network proxy,
 (stockfish.js 10.0.2). Playwright supplies those exact scripts to the page. This
 validates application behavior, not direct browser CDN connectivity or external
 images/fonts. TLS verification must remain enabled when obtaining these files.
+
+## Guided pattern coaching
+
+Open **Puzzles → Learn attacking patterns, defenses and sacrifices**, or
+**Study library → Pattern training**. This uses the existing green interface
+and keeps your current game intact.
+
+Eight lessons cover knight forks, back-rank queen sacrifices, a rook investment
+that forces a fork, discovered attacks, relative pins, rejecting an unsound bishop
+sacrifice, pawn breakthroughs, and defensive escape squares. Each lesson follows
+**Learn → Calculate → Defend → Review**:
+
+- Step through an explained example, including recaptures and declined sacrifices.
+- Compare two legal candidates and predict the opponent's reply and your next move
+  without moving the board or seeing engine scores.
+- Choose a defense; preserving equality counts, and forced-loss positions are
+  explicitly identified as resistance exercises.
+- Replay your choices and engine alternatives, with material balances and
+  finite-depth evaluation rather than claims of guaranteed compensation.
+
+Study variations change supporting pawns and colors, reject recently seen
+positions, and check legality and the pattern move with a separate Stockfish
+worker. They are constructed study positions, not claimed to be played games.
+Generation is bounded and offers a retry if verification fails. The existing
+Endless challenges generator still supplies positions from randomized legal games.
+
+Pattern progress uses the separate `chess-tutor.patterns.v1` browser-storage key.
+It tracks completed calculations, hint-free results, defenses, and reviews after
+at least a day. Review intervals grow from 1 to 3, 7, and 14 days; repeating a
+position immediately does not count as retained learning. Scores are training
+feedback, not an Elo estimate. Engine checks accept close alternatives (within
+0.70 pawns), preserve winning mates, and compare resistance in forced losses.
+
+Run `node tests/patterns-smoke.cjs` alongside the existing browser regression
+suite. It supports the same `CHESS_TEST_URL`, `CHROMIUM_PATH`, and
+`CHESS_TEST_ASSET_DIR` settings and uses real Stockfish searches.

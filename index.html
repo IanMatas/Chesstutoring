@@ -28,6 +28,7 @@
             <details class="study-menu" id="studyMenu">
                 <summary>Study library</summary>
                 <div class="study-menu-content">
+                    <button class="mode-tab" data-mode="patterns">Pattern training</button>
                     <button class="mode-tab" data-mode="openings">Openings</button>
                     <button class="mode-tab" data-mode="midgame">Strategy lessons</button>
                     <button class="mode-tab" data-mode="endgame">Endgames</button>
@@ -47,6 +48,7 @@
 
         <main id="puzzlesMode" class="learning-hub" style="display:none" aria-label="Puzzle practice">
             <section class="learning-overview" id="learningOverview"></section>
+            <button class="btn btn-secondary" id="patternShortcut">Learn attacking patterns, defenses and sacrifices →</button>
             <div class="puzzle-filters" role="group" aria-label="Choose puzzle collection">
                 <button class="filter-btn active" data-puzzle-filter="recommended" aria-pressed="true">For you</button>
                 <button class="filter-btn" data-puzzle-filter="all" aria-pressed="false">Study collection</button>
@@ -61,6 +63,8 @@
                 <div id="skillProgress" class="skill-progress"></div>
             </section>
         </main>
+
+        <main id="patternsMode" class="learning-hub" style="display:none" aria-label="Guided pattern training"></main>
 
         <!-- ═══════════════ PLAY MODE ═══════════════ -->
         <main class="main-content" id="playMode">
@@ -453,6 +457,7 @@
     <script src="js/trainer.js"></script>
     <script src="js/puzzles.js"></script>
     <script src="js/learning.js"></script>
+    <script src="js/patterns.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>

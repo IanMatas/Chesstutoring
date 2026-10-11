@@ -160,3 +160,21 @@ body[data-learning-mode="play"] #moveList .move-entry { color: var(--text) !impo
     body[data-learning-mode="coach"] .mode-intro h1 { font-size: 24px; }
     body[data-learning-mode="coach"] .mode-intro .eyebrow, body[data-learning-mode="coach"] #modeDescription { display: none; }
 }
+
+/* Guided patterns share the existing board, palette and controls. */
+#patternsMode > p, #patternsMode > button, #patternShortcut { margin-bottom: 20px; }
+.pattern-workspace { display:grid; grid-template-columns:minmax(240px, 480px) minmax(260px, 1fr); gap:28px; align-items:start; }
+.pattern-panel { min-width:0; }
+.pattern-panel p { line-height:1.65; margin-bottom:16px; }
+.pattern-panel label { display:block; margin:12px 0 6px; font-size:13px; }
+.pattern-panel select { width:100%; padding:10px; color:var(--text); background:#19231d; border:1px solid #ffffff30; border-radius:7px; }
+.pattern-panel select:focus-visible { outline:3px solid #d2e9ad; }
+.pattern-actions { display:flex; flex-wrap:wrap; gap:8px; margin:16px 0; }
+.pattern-piece { font-family: 'DejaVu Sans', 'Arial Unicode MS', serif; font-size:clamp(26px,4vw,48px); line-height:1; }
+.pattern-piece.white-piece { color:#fff; -webkit-text-stroke:1px #333; }
+.pattern-piece.black-piece { color:#17201a; -webkit-text-stroke:1px #ddd; }
+.pattern-progress { margin-top:14px; color:var(--learn-green); font-size:12px; }
+#patternBoardCaption { margin:12px 0; }
+@media (max-width:700px) { .pattern-workspace { grid-template-columns:1fr; gap:16px; } .pattern-piece { font-size:clamp(25px,8vw,44px); } }
+#patternBoard .learning-square { display:flex; align-items:center; justify-content:center; cursor:default; }
+#patternBoard .learning-piece { width:100%; }

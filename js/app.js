@@ -2038,6 +2038,7 @@
             document.getElementById('trainingSession').style.display = 'none';
 
             window.learning?.onMode(mode);
+            window.patterns?.onMode(mode);
             if (mode === 'deep-analysis') this._initDeepAnalysisMode();
             else if (mode === 'openings') this._renderOpeningsHub();
             else if (mode === 'midgame') this._renderMidgameHub();
@@ -4723,6 +4724,8 @@
         window.trainer = new TrainingController(window.app);
         window.trainer.init();
         window.learning = new LearningController(window.app, window.trainer);
+        window.patterns = new PatternController();
+        document.getElementById('patternShortcut').addEventListener('click', () => window.trainer._switchMode('patterns'));
     });
 })();
 
