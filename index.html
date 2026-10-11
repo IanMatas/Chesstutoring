@@ -71,6 +71,7 @@
             <section id="quickCoach" class="quick-coach" hidden aria-label="Coach at a glance" aria-live="polite">
                 <div><strong>Your move</strong><p id="quickCoachLesson"></p></div>
                 <div><strong>Watch for</strong><p id="quickCoachThreat"></p></div>
+                <div class="move-why-action"><button id="showMoveWhy" class="btn btn-primary" hidden>Show why on the board</button><p id="moveWhyStatus" role="status"></p></div>
                 <div><strong id="quickCoachLineTitle">Next line</strong><p id="quickCoachLine"></p></div>
             </section>
             <!-- Left Panel: Board -->
@@ -108,6 +109,12 @@
                                 <span class="variation-preview-step" id="varPreviewStep">Move 1 of 4: Nf3</span>
                             </div>
                             <div class="variation-preview-desc" id="varPreviewDesc">Attacks Black's e5 pawn with tempo</div>
+                            <div id="moveLessonControls" hidden>
+                                <div class="pattern-actions"><button id="lessonPlayed" class="btn btn-secondary">What my move allows</button><button id="lessonBest" class="btn btn-secondary">Why the alternative works</button></div>
+                                <label id="lessonPredictionLabel" for="lessonPrediction">Predict the next move</label>
+                                <select id="lessonPrediction"></select><button id="lessonPredict" class="btn btn-primary">Test my prediction</button>
+                                <p id="lessonPredictionFeedback" role="status"></p>
+                            </div>
                             <div class="variation-preview-controls">
                                 <button id="varStartBtn" class="nav-btn btn-sm" title="Start of line">⏮</button>
                                 <button id="varPrevBtn" class="nav-btn btn-sm" title="Previous move">◀</button>
@@ -458,6 +465,7 @@
     <script src="js/puzzles.js"></script>
     <script src="js/learning.js"></script>
     <script src="js/patterns.js"></script>
+    <script src="js/move-lessons.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>

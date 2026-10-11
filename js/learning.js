@@ -277,10 +277,11 @@
             card.hidden=this.mode!=='coach';
             if(card.hidden)return;
             const current=md||this.app.moveData[this.app.viewIndex-1];
+            window.moveLessons?.update(current);
             const index=this.app.moveData.indexOf(current);
             const previous=current?.isPlayer?current:index>0?this.app.moveData[index-1]:null;
             document.getElementById('quickCoachLesson').textContent=previous?.coaching
-                ? `${previous.san}: ${plain(previous.coaching.title,7)} ${firstThought(previous.coaching.suggestion||previous.coaching.message)}`
+                ? `${previous.san}: ${plain(previous.coaching.title,7)} ${firstThought(previous.coaching.message||previous.coaching.suggestion)}`
                 : 'Before moving, check your king’s safety and look for undefended pieces.';
             const analysis=current?.botAnalysis;
             const threat=analysis?.threatsCreated?.find(t=>!['None','none'].includes(t.piece));

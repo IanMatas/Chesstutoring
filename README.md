@@ -120,3 +120,24 @@ feedback, not an Elo estimate. Engine checks accept close alternatives (within
 Run `node tests/patterns-smoke.cjs` alongside the existing browser regression
 suite. It supports the same `CHESS_TEST_URL`, `CHROMIUM_PATH`, and
 `CHESS_TEST_ASSET_DIR` settings and uses real Stockfish searches.
+
+## Show why a game move matters
+
+In Coach Play, **Show why on the board** opens a reversible comparison of your
+last move with an engine alternative from the same starting position. A dedicated
+Stockfish worker checks both root moves; deeper analysis may revise the earlier
+quick label. Switch between the two lines, predict replies, or step through them
+on the board with arrows. Notes identify captures, checks, newly available capture
+threats, development and running material changes. Sacrifice lines include the
+opponent's replies and recaptures. If the shown line has no net material change,
+the explanation identifies that limit instead of inventing a tactical win.
+
+Prediction feedback distinguishes matching this particular engine continuation
+from proving every other move wrong. Evaluations are finite-search estimates.
+The demonstration preserves the live game; **Back to Game** returns to it. The
+existing **Play vs Bot** button intentionally starts a practice game at the viewed
+position. Navigation cancels pending comparison searches.
+
+`node tests/move-lessons-smoke.cjs` checks actual move entry, both branches,
+prediction, a forced queen-sacrifice mate, game preservation and mobile layout.
+It uses the same environment variables as the other browser suites.

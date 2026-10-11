@@ -178,3 +178,9 @@ body[data-learning-mode="play"] #moveList .move-entry { color: var(--text) !impo
 @media (max-width:700px) { .pattern-workspace { grid-template-columns:1fr; gap:16px; } .pattern-piece { font-size:clamp(25px,8vw,44px); } }
 #patternBoard .learning-square { display:flex; align-items:center; justify-content:center; cursor:default; }
 #patternBoard .learning-piece { width:100%; }
+.move-why-action { grid-column:1/-1; grid-row:2; }
+.move-why-action p:empty { display:none; }
+#moveLessonControls { width:100%; }
+#lessonPrediction { max-width:100%; padding:8px; background:#19231d; color:var(--text); border:1px solid #ffffff30; border-radius:6px; }
+#lessonPredictionLabel { display:block; margin-bottom:8px; }
+#lessonPredictionFeedback { margin-top:8px; }

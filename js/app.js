@@ -574,7 +574,7 @@
 
             const md = {
                 san: move.san, color: move.color, from: move.from, to: move.to,
-                captured: move.captured || null,
+                captured: move.captured || null, promotion: move.promotion || null,
                 isPlayer: true, classification: coaching.classification,
                 coaching, phase: coaching.phase,
                 boardSituation, futureVariations, engineLines: multiPv, replyLine: evalAfter.pv || [],
@@ -646,7 +646,7 @@
             // Store move data with bot analysis
             this.moveData.push({
                 san: move.san, color: move.color, from: move.from, to: move.to,
-                captured: move.captured || null,
+                captured: move.captured || null, promotion: move.promotion || null,
                 isPlayer: false, classification: null, coaching: null,
                 botAnalysis: botAnalysis,
                 engineLines: botPvLines,
@@ -1208,6 +1208,7 @@
             const safeIdx = Math.max(0, Math.min(v.moves.length, stepIdx));
             this.varStepIndex = safeIdx;
 
+            window.moveLessons?.onStep(v, safeIdx);
             const targetFen = v.positions[safeIdx] || v.positions[0];
             const displayGame = new Chess(targetFen);
 
@@ -1254,6 +1255,7 @@
 
         _exitVariationPreview() {
             this.activeVariation = null;
+            document.getElementById('moveLessonControls').hidden=true;
             const banner = document.getElementById('variationPreviewBanner');
             if (banner) banner.style.display = 'none';
             this._clearArrows();
@@ -2039,6 +2041,8 @@
 
             window.learning?.onMode(mode);
             window.patterns?.onMode(mode);
+            window.moveLessons?.cancel();
+            if (this.app.activeVariation) this.app._exitVariationPreview();
             if (mode === 'deep-analysis') this._initDeepAnalysisMode();
             else if (mode === 'openings') this._renderOpeningsHub();
             else if (mode === 'midgame') this._renderMidgameHub();
@@ -4725,6 +4729,7 @@
         window.trainer.init();
         window.learning = new LearningController(window.app, window.trainer);
         window.patterns = new PatternController();
+        window.moveLessons = new MoveLessons(window.app);
         document.getElementById('patternShortcut').addEventListener('click', () => window.trainer._switchMode('patterns'));
     });
 })();
