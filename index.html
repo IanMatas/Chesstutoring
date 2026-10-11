@@ -7,8 +7,8 @@
     <title>Chess Tutor | AI-Powered Chess Coach</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/styles.css?v=guided-v3">
-    <link rel="stylesheet" href="css/learning.css?v=guided-v3">
+    <link rel="stylesheet" href="css/styles.css?v=free-v4">
+    <link rel="stylesheet" href="css/learning.css?v=free-v4">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>♔</text></svg>">
 </head>
 <body>
@@ -18,7 +18,7 @@
             <div class="logo">
                 <span class="logo-icon">♔</span>
                 <span class="logo-text">Chess Tutor</span>
-                <span class="release-label">Guided coach · v3</span>
+                <span class="release-label">Free play + PGN · v4</span>
             </div>
             <nav class="mode-tabs" id="modeTabs" aria-label="Main navigation">
                 <button class="mode-tab active" data-mode="play" id="modePlay" aria-pressed="true">Free Play</button>
@@ -66,6 +66,14 @@
 
         <main id="patternsMode" class="learning-hub" style="display:none" aria-label="Guided pattern training"></main>
 
+<main id="freePlayMode" class="learning-hub" aria-label="Free play and PGN study">
+            <div class="study-heading"><div><h2>Play both sides. Explore any game.</h2><p>No automatic opponent until you choose one.</p></div><div class="pattern-actions"><button class="btn btn-secondary" data-free="import">Open PGN</button><button class="btn btn-secondary" data-free="export">Download PGN</button><button class="btn btn-secondary" data-free="new">New board</button></div></div>
+            <div class="study-layout"><section><strong id="freeState" role="status"></strong><p id="freeMessage" class="free-message" aria-live="polite"></p><div id="freeBoard" class="learning-board" aria-label="Free play board"></div>
+                <div id="freePromotion" hidden><p>Promote to:</p><button class="btn" data-free-promote="q">Queen</button><button class="btn" data-free-promote="r">Rook</button><button class="btn" data-free-promote="b">Bishop</button><button class="btn" data-free-promote="n">Knight</button></div>
+                <div class="pattern-actions"><button class="btn btn-secondary" data-free="first" aria-label="Starting position">Start</button><button class="btn btn-secondary" data-free="prev">Previous</button><button class="btn btn-secondary" data-free="next">Next →</button><button class="btn btn-secondary" data-free="last">Latest</button><button class="btn btn-secondary" data-free="flip">Flip</button></div><p id="freePosition" class="muted"></p>
+            </section><section class="free-controls"><h3>Continue from here</h3><p id="freeContinuation" class="free-message"></p><label for="freeSide">Who do you want to play?</label><select id="freeSide"><option value="both">Both sides — no bot</option><option value="w">White against the bot</option><option value="b">Black against the bot</option></select><label for="freeDifficulty">Bot strength</label><select id="freeDifficulty"><option value="0">Easy</option><option value="8" selected>Medium</option><option value="18">Strong</option></select><button class="btn btn-primary" data-free="continue">Continue from this position</button><button class="btn btn-secondary" data-free="study">Explain this position on the study board</button><details open class="study-details"><summary>Game moves — choose any position</summary><div id="freeMoves" class="free-moves"></div></details><button id="freeOriginal" class="btn btn-secondary" data-free="original" hidden>Download original PGN</button></section></div>
+        </main>
+        <dialog id="pgnDialog" class="puzzle-dialog"><div class="pgn-panel"><h2>Open a PGN game</h2><p>Choose a .pgn file or paste one game. Unfinished games work too.</p><a href="examples/study-game.pgn" download="study-game.pgn">Download an example unfinished game</a><label for="pgnFile">PGN file</label><input id="pgnFile" type="file" accept=".pgn,text/plain,application/x-chess-pgn"><label for="pgnText">Or paste PGN</label><textarea id="pgnText" rows="9" placeholder="1. e4 e5 2. Nf3 Nc6 *"></textarea><p id="pgnError" role="alert"></p><div class="pattern-actions"><button id="pgnLoad" class="btn btn-primary">Load game</button><button id="pgnClose" class="btn btn-secondary">Cancel</button></div><p class="muted">The board follows the main line. Original comments and side variations remain available in Download original PGN.</p></div></dialog>
         <!-- ═══════════════ PLAY MODE ═══════════════ -->
         <main class="main-content" id="playMode">
             <section id="quickCoach" class="quick-coach" hidden aria-label="Coach at a glance" aria-live="polite">
@@ -110,14 +118,13 @@
                             <div class="variation-preview-desc" id="varPreviewDesc">Attacks Black's e5 pawn with tempo</div>
                             <div id="moveLessonControls" hidden>
                                 <div class="pattern-actions"><button id="lessonPlayed" class="btn btn-secondary">What my move allows</button><button id="lessonBest" class="btn btn-secondary">Why the alternative works</button></div>
-                                <label id="lessonPredictionLabel" for="lessonPrediction">Predict the next move</label>
-                                <select id="lessonPrediction"></select><button id="lessonPredict" class="btn btn-primary">Test my prediction</button>
-                                <p id="lessonPredictionFeedback" role="status"></p>
+                                <button id="lessonAutoplay" class="btn btn-primary">Pause demonstration</button>
+                                <p id="lessonProgress" role="status"></p>
                             </div>
                             <div class="variation-preview-controls">
                                 <button id="varStartBtn" class="nav-btn btn-sm" title="Start of line">⏮</button>
-                                <button id="varPrevBtn" class="nav-btn btn-sm" title="Previous move">◀</button>
-                                <button id="varNextBtn" class="nav-btn btn-sm" title="Next move">▶</button>
+                                <button id="varPrevBtn" class="nav-btn btn-sm" title="Previous move">← Previous</button>
+                                <button id="varNextBtn" class="nav-btn btn-sm" title="Next move">Next move →</button>
                                 <button id="varEndBtn" class="nav-btn btn-sm" title="End of line">⏭</button>
                                 <button id="varExitBtn" class="btn btn-secondary btn-sm">↩ Back to Game</button>
                                 <button id="varPlayVsBotBtn" class="btn btn-accent btn-sm">🤖 Play vs Bot</button>
@@ -289,9 +296,9 @@
                 <div class="sequence-nav-bar" id="analysisSequenceBar" style="display:none">
                     <div class="sequence-controls">
                         <button id="seqStartBtn" class="nav-btn" title="Start of sequence">⏮</button>
-                        <button id="seqPrevBtn" class="nav-btn" title="Previous move">◀</button>
+                        <button id="seqPrevBtn" class="nav-btn" title="Previous move">← Previous</button>
                         <span class="sequence-indicator" id="analysisStepIndicator">Move 1 of 5</span>
-                        <button id="seqNextBtn" class="nav-btn" title="Next move">▶</button>
+                        <button id="seqNextBtn" class="nav-btn" title="Next move">Next move →</button>
                         <button id="seqEndBtn" class="nav-btn" title="End of sequence">⏭</button>
                     </div>
                     <button id="analysisPlayVsAiBtn" class="btn btn-accent btn-sm">
@@ -363,8 +370,8 @@
                         <button id="trainFlipBtn" class="btn btn-ghost"><span class="icon">🔃</span> Flip</button>
                     </div>
                     <div class="move-nav">
-                        <button id="trainPrevBtn" class="nav-btn" title="Previous move">◀</button>
-                        <button id="trainNextBtn" class="nav-btn" title="Next move">▶</button>
+                        <button id="trainPrevBtn" class="nav-btn" title="Previous move">← Previous</button>
+                        <button id="trainNextBtn" class="nav-btn" title="Next move">Next move →</button>
                     </div>
                 </div>
             </section>
@@ -473,15 +480,16 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
-    <script src="js/sounds.js?v=guided-v3"></script>
-    <script src="js/engine.js?v=guided-v3"></script>
-    <script src="js/coach.js?v=guided-v3"></script>
-    <script src="js/trainer.js?v=guided-v3"></script>
-    <script src="js/puzzles.js?v=guided-v3"></script>
-    <script src="js/learning.js?v=guided-v3"></script>
-    <script src="js/patterns.js?v=guided-v3"></script>
-    <script src="js/move-lessons.js?v=guided-v3"></script>
-    <script src="js/study-board.js?v=guided-v3"></script>
-    <script src="js/app.js?v=guided-v3"></script>
+    <script src="js/sounds.js?v=free-v4"></script>
+    <script src="js/engine.js?v=free-v4"></script>
+    <script src="js/coach.js?v=free-v4"></script>
+    <script src="js/trainer.js?v=free-v4"></script>
+    <script src="js/puzzles.js?v=free-v4"></script>
+    <script src="js/learning.js?v=free-v4"></script>
+    <script src="js/patterns.js?v=free-v4"></script>
+    <script src="js/move-lessons.js?v=free-v4"></script>
+    <script src="js/study-board.js?v=free-v4"></script>
+    <script src="js/free-play.js?v=free-v4"></script>
+    <script src="js/app.js?v=free-v4"></script>
 </body>
 </html>

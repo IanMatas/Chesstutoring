@@ -59,20 +59,17 @@ const path = require("node:path");
       await page.locator("#varPreviewTitle").textContent(),
       /Engine alternative/,
     );
-    const next = await page.evaluate(() => {
-      const m = app.activeVariation.moves[app.varStepIndex];
-      return m.from + m.to + (m.promotion || "");
-    });
-    await page.locator("#lessonPrediction").selectOption(next);
-    await page.locator("#lessonPredict").click();
-    assert.match(
-      await page.locator("#lessonPredictionFeedback").textContent(),
-      /anticipated/,
-    );
+    assert.equal(await page.locator("#lessonPrediction").count(), 0);
+    const first = await page.evaluate(() => app.varStepIndex);
+    await page.waitForFunction((index) => app.varStepIndex > index, first);
+    await page.locator("#lessonAutoplay").click();
+    assert.equal(await page.evaluate(() => moveLessons.timer), null);
     assert.match(
       await page.locator("#varPreviewDesc").textContent(),
-      /Material change/,
+      /White|Black/,
     );
+    await page.locator("#varNextBtn").click();
+    assert.equal(await page.evaluate(() => moveLessons.timer), null);
     await page.locator("#varExitBtn").click();
     assert.deepEqual(
       await page.evaluate(() => ({
@@ -125,7 +122,9 @@ const path = require("node:path");
       true,
     );
     // Cancel an in-flight search, not just an already-open demonstration.
-    await page.evaluate(() => { moveLessons.comparison = null; });
+    await page.evaluate(() => {
+      moveLessons.comparison = null;
+    });
     await page.locator("#showMoveWhy").click();
     await page.locator("#modePuzzles").click();
     await page.waitForTimeout(500);
@@ -134,7 +133,7 @@ const path = require("node:path");
     assert.equal(await page.evaluate(() => app.game.fen()), live.fen);
     assert.deepEqual(errors, []);
     console.log(
-      "PASS actual move comparison, prediction, queen sacrifice, game preservation, cancellation and mobile layout",
+      "PASS actual move comparison, automatic demonstration, queen sacrifice, game preservation, cancellation and mobile layout",
     );
   } finally {
     await browser.close();

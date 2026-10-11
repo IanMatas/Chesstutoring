@@ -231,3 +231,12 @@ body[data-learning-mode="play"] #moveList .move-entry { color: var(--text) !impo
  #studyReplayControls .pattern-actions { margin:0 0 8px; }
  #studyReplayControls .btn { font-size:12px; padding:10px; }
 }
+.free-controls { display:grid; gap:12px; align-content:start; background:#19231d; padding:24px; border-radius:14px; }
+.free-controls label,.pgn-panel label { display:block; font-size:13px; color:var(--learn-muted); }
+.free-controls select,.pgn-panel textarea { padding:11px; border:1px solid #ffffff25; border-radius:7px; background:#111815; color:var(--text); width:100%; }
+.free-message { color:var(--learn-muted); font-size:13px; line-height:1.6; margin:10px 0 16px; }
+.free-moves { display:flex; flex-wrap:wrap; gap:6px; max-height:240px; overflow:auto; margin-top:12px; }.free-moves .btn { padding:7px 10px; font-size:12px; }.free-current { outline:2px solid var(--learn-green); }
+#freeBoard .learning-square { display:flex; align-items:center; justify-content:center; }#freeBoard .study-last { box-shadow:inset 0 0 0 3px #e2c769; }
+#freeBoard .learning-piece img { pointer-events:auto; }
+.pgn-panel { padding:24px; display:grid; gap:12px; }.pgn-panel p { line-height:1.6; }.pgn-panel input { max-width:100%; }#pgnError { color:#efbc99; }#pgnError:empty { display:none; }
+@media(max-width:760px){#freePlayMode .study-layout { display:grid; grid-template-columns:minmax(0,1fr); }#freePlayMode .study-heading p { display:block; }#freePlayMode .study-heading .pattern-actions { margin:0; }#freeBoard { width:min(100%,44vh); margin:auto; }.free-controls { padding:18px; }.pgn-panel { padding:16px; } }

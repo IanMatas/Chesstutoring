@@ -235,7 +235,7 @@
         }
         onMode(mode) {
             this.mode=mode; document.body.dataset.learningMode=mode;
-            const copy={play:['YOUR BOARD. YOUR PACE.','Make your next move.','An uninterrupted game. Practice moments are saved for whenever you’re ready.'],coach:['A LITTLE GUIDANCE. A LOT OF THINKING.','Play. Pause. Discover.','Make a move, then see it explained on the board. One idea at a time.'],puzzles:['SMALL CHALLENGES. LASTING SKILLS.','Build your chess instincts.','Practice anytime. Start with a fresh puzzle, revisit a mistake, or check what you remember.']};
+            const copy={play:['YOUR BOARD. YOUR PACE.','Make your next move.','Play both sides, open a PGN, or continue any position against the bot.'],coach:['A LITTLE GUIDANCE. A LOT OF THINKING.','Play. Pause. Discover.','Make a move, then see it explained on the board. One idea at a time.'],puzzles:['SMALL CHALLENGES. LASTING SKILLS.','Build your chess instincts.','Practice anytime. Start with a fresh puzzle, revisit a mistake, or check what you remember.']};
             const intro=document.getElementById('modeIntro'); intro.hidden=!copy[mode];
             if(copy[mode]) ['modeEyebrow','modeTitle','modeDescription'].forEach((id,i)=>document.getElementById(id).textContent=copy[mode][i]);
             document.getElementById('practiceShortcut').hidden=mode==='puzzles';

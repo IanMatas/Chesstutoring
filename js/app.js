@@ -1254,6 +1254,7 @@
         }
 
         _exitVariationPreview() {
+            window.moveLessons?.pause();
             this.activeVariation = null;
             document.getElementById('moveLessonControls').hidden=true;
             const banner = document.getElementById('variationPreviewBanner');
@@ -1270,6 +1271,7 @@
             if (!variation?.positions?.length || this.thinking) return;
             const index = this.activeVariation === variation ? this.varStepIndex : 0;
             const game = new Chess(variation.positions[index] || variation.positions[0]);
+            if (window.freePlay && !game.game_over()) { window.freePlay.fromFen(game.fen(), game.turn()); return; }
             if (game.game_over()) {
                 this._status('This position is finished. Step back to practice an earlier position.');
                 return;
@@ -2018,7 +2020,8 @@
         _switchMode(mode) {
             if (window.learning?.session) return;
             // Keep UCI searches isolated while a move is being evaluated.
-            if (this.app.thinking && !['play', 'coach', 'puzzles'].includes(mode)) return;
+            if (this.app.thinking && !['play', 'coach', 'puzzles', 'deep-analysis', 'patterns'].includes(mode)) return;
+            if (["play", "coach"].includes(this.currentMode) && window.studyBoard) window.studyBoard.sourceMode=this.currentMode;
             this.currentMode = mode;
             ChessSounds.tabSwitch();
 
@@ -2033,7 +2036,7 @@
             document.querySelector(`[data-mode="${mode}"]`)?.classList.add('active');
 
             // Show/hide sections
-            document.getElementById('playMode').style.display = ['play', 'coach'].includes(mode) ? '' : 'none';
+            document.getElementById('playMode').style.display = mode === 'coach' ? '' : 'none';
             const deepEl = document.getElementById('deepAnalysisMode');
             if (deepEl) deepEl.style.display = 'none';
             document.getElementById('trainingHub').style.display = ['openings','midgame','endgame'].includes(mode) ? '' : 'none';
@@ -2043,6 +2046,7 @@
             window.patterns?.onMode(mode);
             window.moveLessons?.cancel();
             if (this.app.activeVariation) this.app._exitVariationPreview();
+            window.freePlay?.onMode(mode);
             window.studyBoard?.onMode(mode);
             if (mode === 'deep-analysis') return;
             else if (mode === 'openings') this._renderOpeningsHub();
@@ -4732,6 +4736,7 @@
         window.patterns = new PatternController();
         window.moveLessons = new MoveLessons(window.app);
         window.studyBoard = new StudyBoard(window.app);
+        window.freePlay = new FreePlay();
         document.getElementById('patternShortcut').addEventListener('click', () => window.trainer._switchMode('patterns'));
     });
 })();

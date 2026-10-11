@@ -126,20 +126,22 @@ suite. It supports the same `CHESS_TEST_URL`, `CHROMIUM_PATH`, and
 In Coach Play, **Show why on the board** opens a reversible comparison of your
 last move with an engine alternative from the same starting position. A dedicated
 Stockfish worker checks both root moves; deeper analysis may revise the earlier
-quick label. Switch between the two lines, predict replies, or step through them
+quick label. Switch between the two lines, watch the automatic demonstration, or step through them
 on the board with arrows. Notes identify captures, checks, newly available capture
 threats, development and running material changes. Sacrifice lines include the
 opponent's replies and recaptures. If the shown line has no net material change,
 the explanation identifies that limit instead of inventing a tactical win.
 
-Prediction feedback distinguishes matching this particular engine continuation
-from proving every other move wrong. Evaluations are finite-search estimates.
+Demonstrations advance every three seconds and can be paused or stepped manually.
+There is no prediction quiz to complete. Notes name the pieces, explain checks
+and immediate recaptures, and describe the material cost in familiar piece values.
+Evaluations are finite-search estimates.
 The demonstration preserves the live game; **Back to Game** returns to it. The
 existing **Play vs Bot** button intentionally starts a practice game at the viewed
 position. Navigation cancels pending comparison searches.
 
 `node tests/move-lessons-smoke.cjs` checks actual move entry, both branches,
-prediction, a forced queen-sacrifice mate, game preservation and mobile layout.
+automatic playback, a forced queen-sacrifice mate, game preservation and mobile layout.
 It uses the same environment variables as the other browser suites.
 
 ## Guided coach v3 interface
@@ -165,3 +167,33 @@ has deployed it; verify the version label on the actual URL in use.
 Run `node tests/study-board-smoke.cjs` with the same browser-test environment
 variables to check editing, replay, autoplay/pause, undo, pattern demonstrations,
 mobile layout, cancellation and live-game preservation.
+
+## Free Play and PGN games (v4)
+
+**Free Play** is now an independent sandbox. You move both sides by default,
+without engine analysis or automatic replies. **Coach Play** keeps its separate
+coached bot game. Free Play remains usable if Stockfish cannot load (chess.js
+still supplies the rules).
+
+Use **Open PGN** to upload a file or paste one game. Previous/Next and the move
+list select any position, including positions in unfinished games. Choose
+**Both sides**, **White against the bot**, or **Black against the bot**, then
+**Continue from this position**. The bot moves immediately if it is the opposing
+side's turn. Browsing history or switching modes cancels pending bot searches.
+Easy/Medium/Strong are Stockfish skill settings, not calibrated Elo ratings.
+
+Continuing from an earlier position replaces the later moves in the working
+copy. **Download PGN** exports the entire working main line, including its starting
+FEN when needed. Export before branching to retain a self-play line.
+**Download original PGN** preserves an imported file exactly, including comments
+and variations. The board follows only its main line. Imported declared results
+are retained until play changes the line; unfinished continuations use `*`.
+
+Try [the included unfinished Italian Game](examples/study-game.pgn), also linked
+in the import dialog. **Explain this position on the study board** sends the
+selected position to guided analysis without altering either game.
+
+Run `node tests/free-play-smoke.cjs` with the same test environment variables.
+It covers both-side play, PGN file/text import, downloadable round-trips, branching,
+original-file preservation, nonstandard starting FENs, both bot colors, cancellation,
+and handoff to the study board. The header reads **Free play + PGN · v4**.

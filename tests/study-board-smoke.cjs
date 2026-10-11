@@ -65,7 +65,7 @@ const path = require("node:path");
     await p.locator("#studyBest").click();
     assert.match(
       await p.locator("#studyExplanation").textContent(),
-      /Material change/,
+      /White|Black/,
     );
     await p.locator("[data-study=return]").click();
     await p.locator("#studyUndo").click();

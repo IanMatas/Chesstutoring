@@ -38,11 +38,13 @@ for (const [file, expected, originalLength] of [
         await page.goto(process.env.CHESS_TEST_URL || 'http://127.0.0.1:8000/');
         await page.waitForFunction(() => app.cachedEval);
         assert.equal(await page.locator('.mode-tabs .mode-tab').count(), 4);
+        await page.locator('#modeCoach').click();
+        await page.locator('#coachingDetailToggle').click();
         await page.locator('#chessboard [data-square=e2]').click();
         await page.locator('#chessboard [data-square=e4]').click();
         await page.waitForFunction(() => app.moveData.length === 2 && !app.thinking);
         assert.equal(await page.locator('.bot-analysis').count(), 0);
-        await page.locator('#modeCoach').click();
+        await page.locator('#coachingDetailToggle').click();
         assert.equal(await page.locator('.previous-move-lesson').count(), 1);
         assert.ok(await page.locator('#quickCoach').isVisible());
         await page.locator('#coachContent > .coaching-breakdown > summary').click();

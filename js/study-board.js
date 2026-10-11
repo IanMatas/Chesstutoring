@@ -60,7 +60,7 @@
           return this.play({ ...m, promotion: b.dataset.promote });
         }
         const a = b.dataset.study;
-        if (a === "import") this.load(this.app.game.fen());
+        if (a === "import") this.load(this.sourceMode === "play" && window.freePlay ? window.freePlay.viewedFen() : this.app.game.fen());
         if (a === "reset") this.load(this.origin);
         if (a === "undo") {
           this.stop();
@@ -110,7 +110,7 @@
       if (this.active) {
         if (!this.opened) {
           this.opened = true;
-          this.load(this.app.game.fen());
+          this.load(this.sourceMode === "play" && window.freePlay ? window.freePlay.viewedFen() : this.app.game.fen());
         } else this.analyze(this.lastMove);
       } else this.stop();
     }

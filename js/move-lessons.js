@@ -36,19 +36,15 @@
       document
         .getElementById("lessonBest")
         .addEventListener("click", () => this.show("best"));
-      document.getElementById("lessonPredict").addEventListener("click", () => {
-        const v = this.app.activeVariation,
-          index = this.app.varStepIndex,
-          select = document.getElementById("lessonPrediction");
-        if (!v?.moveLesson || !select.value) return;
-        const actual = v.moves[index];
-        const matches = select.value === uci(actual);
-        this.app._stepVariation(index + 1);
-        document.getElementById("lessonPredictionFeedback").textContent =
-          matches
-            ? "You anticipated the engine’s continuation."
-            : `The illustrated continuation is ${actual.san}. Your alternative is not automatically wrong; this comparison follows the engine’s line.`;
-      });
+      document
+        .getElementById("lessonAutoplay")
+        .addEventListener("click", () =>
+          this.timer ? this.pause() : this.autoplay(),
+        );
+      for (const id of ["varStartBtn", "varPrevBtn", "varNextBtn", "varEndBtn"])
+        document
+          .getElementById(id)
+          .addEventListener("click", () => this.pause());
     }
     update(md) {
       const index = this.app.moveData.indexOf(md);
@@ -59,6 +55,7 @@
           : null;
       if (target !== this.target) {
         this.token++;
+        this.pause();
         this.target = target;
         this.comparison = null;
         this.button.disabled = false;
@@ -69,6 +66,7 @@
     }
     cancel() {
       this.token++;
+      this.pause();
       this.engine?.destroy();
       this.engine = null;
       this.button.disabled = false;
@@ -194,38 +192,58 @@
         const before = g.fen(),
           m = g.move(obj(u));
         if (!m) break;
-        const net = material(g, color) - start;
-        let note = `${m.color === color ? "Your side" : "Opponent"}: ${m.san}. `;
-        if (m.captured)
-          note += `Takes the ${names[m.captured]} on ${m.to} (${weights[m.captured]} points). `;
+        const who = m.color === "w" ? "White" : "Black",
+          other = m.color === "w" ? "Black" : "White";
+        let note = m.captured
+          ? `${who}'s ${names[m.piece]} takes ${other}'s ${names[m.captured]} on ${m.to}. `
+          : `${who}'s ${names[m.piece]} moves from ${m.from} to ${m.to}. `;
+        if (m.promotion) note += `The pawn becomes a ${names[m.promotion]}. `;
         if (g.in_checkmate())
-          note += "Checkmate: no legal escape, capture or block remains. ";
-        else if (g.in_check())
-          note +=
-            "This gives check, so the next move must deal with the king’s safety. ";
-        else {
-          if (new Chess(before).in_check())
-            note += "Answers the check and makes the king safe for this move. ";
+          note += `Checkmate: ${other} has no legal escape, capture, or block. `;
+        else if (g.in_check()) {
+          const replies = g.moves();
+          const targets = this.newCaptures(before, g.fen(), m.color);
+          if(targets.length)note+=`At the same time, it attacks the ${targets[0]}. `;
+          note += `${other}'s king is in check. ${replies.length === 1 ? `The only legal reply is ${replies[0]}.` : "The next move must remove that check."} `;
+        } else if (new Chess(before).in_check())
+          note += `This gets ${who}'s king out of check. `;
+        else if (m.captured) {
+          const recaptures = g
+            .moves({ verbose: true })
+            .filter((reply) => reply.to === m.to && reply.captured);
+          note += recaptures.length
+            ? `${other} can recapture on ${m.to}; the trade is not finished yet. `
+            : `${other} has no immediate legal recapture on ${m.to}. `;
+        } else {
           const threats = this.newCaptures(before, g.fen(), m.color);
           if (threats.length)
-            note += `Creates a legal capture threat: ${threats.join(", ")}. The opponent can still defend. `;
-          else if (
-            ["n", "b"].includes(m.piece) &&
-            ["1", "8"].includes(m.from[1]) &&
-            !["1", "8"].includes(m.to[1])
-          )
-            note +=
-              "Develops a minor piece from its starting rank so it can join the fight. ";
-          else if (m.piece === "p" && ["d4", "e4", "d5", "e5"].includes(m.to))
-            note +=
-              "Places a pawn in the center, contesting space for the pieces. ";
-          else if (m.flags.includes("k") || m.flags.includes("q"))
-            note += "Castles: moves the king and brings the rook into play. ";
-          else
-            note +=
-              "Watch the next reply before deciding whether this move achieves its aim. ";
+            note += `It now threatens to take the ${threats[0]}. `;
+          else if (m.piece === "p" && !m.promotion) {
+            const f = m.to.charCodeAt(0),
+              r = Number(m.to[1]) + (m.color === "w" ? 1 : -1);
+            const squares = [f - 1, f + 1]
+              .filter((c) => c >= 97 && c <= 104)
+              .map((c) => String.fromCharCode(c) + r);
+            if (r > 0 && r < 9)
+              note += `The pawn controls ${squares.join(" and ")}. `;
+          } else if (m.flags.includes("k") || m.flags.includes("q"))
+            note += "Castling also brings the rook toward the center. ";
         }
-        note += `Material change for your side so far: ${net >= 0 ? "+" : ""}${net}. ${net < 0 ? "You have invested material; follow the replies to see whether it is recovered or compensated." : ""}`;
+        const net = material(g, color) - start;
+        const worth =
+          {
+            1: "one pawn",
+            2: "two pawns",
+            3: "a knight or bishop",
+            5: "a rook",
+            9: "a queen",
+          }[Math.abs(net)] || `${Math.abs(net)} pawns`;
+        if (g.in_checkmate())
+          note += "The mating result matters more than the pieces given up.";
+        else if (net < 0)
+          note += `Compared with the start, ${color === "w" ? "White" : "Black"} has given up material equal to ${worth} so far. The later replies must justify that cost.`;
+        else if (net > 0)
+          note += `${color === "w" ? "White" : "Black"} has gained material equal to ${worth} compared with the start.`;
         moves.push({ ...m, fen: g.fen(), note });
         positions.push(g.fen());
       }
@@ -242,7 +260,7 @@
         positions,
         moves,
         moveLesson: true,
-        whyBetter: `${verdict} ${estimate} Search depth ${result.depth}. ${outcome} This is a finite engine search, not a promise that the opponent will cooperate. Predict each reply or use Next to reveal it.`,
+        whyBetter: `${verdict} ${estimate} Search depth ${result.depth}. ${outcome} This is a finite engine search, not a promise that the opponent will cooperate. The moves play automatically. Pause whenever you want to examine a position.`,
       };
     }
     newCaptures(before, after, color) {
@@ -260,25 +278,48 @@
         .slice(0, 2)
         .map((m) => `${names[m.captured]} on ${m.to} with ${m.san}`);
     }
+    pause() {
+      clearInterval(this.timer);
+      this.timer = null;
+      const button = document.getElementById("lessonAutoplay");
+      if (button) button.textContent = "Play demonstration";
+    }
+    autoplay() {
+      this.pause();
+      const v = this.app.activeVariation;
+      if (!v?.moveLesson) return;
+      if (this.app.varStepIndex >= v.moves.length) this.app._stepVariation(0);
+      document.getElementById("lessonAutoplay").textContent =
+        "Pause demonstration";
+      this.timer = setInterval(() => {
+        if (this.app.activeVariation !== v) {
+          this.pause();
+          return;
+        }
+        this.app._stepVariation(this.app.varStepIndex + 1);
+        if (this.app.varStepIndex >= v.moves.length) this.pause();
+      }, 3000);
+    }
     show(which) {
-      if (this.comparison) this.app._previewVariation(this.comparison[which]);
+      if (!this.comparison) return;
+      this.pause();
+      this.app._previewVariation(this.comparison[which]);
+      if (this.app.varStepIndex < this.app.activeVariation.moves.length)
+        this.autoplay();
     }
     onStep(v, index) {
       const box = document.getElementById("moveLessonControls");
       box.hidden = !v?.moveLesson;
-      if (box.hidden) return;
-      const select = document.getElementById("lessonPrediction"),
-        g = new Chess(v.positions[index]);
-      select.replaceChildren(new Option("Choose the move you expect", ""));
-      for (const m of g.moves({ verbose: true }))
-        select.add(new Option(m.san, uci(m)));
-      const ended = index >= v.moves.length || g.game_over();
-      select.disabled = ended;
-      document.getElementById("lessonPredict").disabled = ended;
-      document.getElementById("lessonPredictionLabel").textContent = ended
-        ? "End of this illustrated line"
-        : `${g.turn() === "w" ? "White" : "Black"} to move — predict the next move`;
-      document.getElementById("lessonPredictionFeedback").textContent = "";
+      if (box.hidden) {
+        this.pause();
+        return;
+      }
+      const status = document.getElementById("lessonProgress");
+      status.textContent =
+        index >= v.moves.length
+          ? "End of this line. Compare the other line or return to your game."
+          : `${index} of ${v.moves.length} moves shown. Watch the highlighted move and read its explanation.`;
+      if (index >= v.moves.length) this.pause();
     }
   }
   window.MoveLessons = MoveLessons;
