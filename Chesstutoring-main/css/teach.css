@@ -1,0 +1,208 @@
+/* Teaching coach v6: one lesson at a time, a board that stays in view, and full game reviews.
+   The original stylesheets are left untouched; these rules extend them. */
+
+/* ── Coach Play layout: the board never scrolls away from the lesson ── */
+#playMode .rating-control { padding: 10px 16px; }
+#playMode .rating-labels { display: none; }
+#playMode .rating-label { margin-bottom: 6px; }
+#playMode .coach-header { flex-wrap: wrap; gap: 10px 14px; }
+#playMode .coach-content { padding: 16px 18px; min-height: 0; }
+@media (min-width: 761px) {
+    #playMode { align-items: start; }
+    #playMode .board-section,
+    #playMode .coach-section { position: sticky; top: calc(var(--coach-header-height, 72px) + 12px); }
+    #playMode .coach-section { max-height: calc(100vh - var(--coach-header-height, 72px) - 24px); display: flex; flex-direction: column; overflow: hidden; }
+    #playMode .coach-panel { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+    #playMode .coach-content { flex: 1 1 auto; overflow-y: auto; overscroll-behavior: contain; }
+    #playMode .history-panel { flex: 0 0 auto; }
+    #playMode .move-list { max-height: 120px; }
+    #playMode .chessboard {
+        width: max(300px, min(560px, calc(100vw - 460px), calc(100vh - var(--coach-header-height, 72px) - 250px)));
+        height: max(300px, min(560px, calc(100vw - 460px), calc(100vh - var(--coach-header-height, 72px) - 250px)));
+    }
+    #playMode .player-info, #playMode .board-controls-row, #playMode .rating-control { max-width: 560px; }
+}
+
+/* Coach panel controls */
+.tc-coach-tools { margin-left: auto; display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px 14px; }
+.tc-tool { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--learn-muted); cursor: pointer; }
+.tc-tool select { padding: 5px 8px; border-radius: 6px; border: 1px solid #ffffff25; background: #111815; color: var(--text); font: inherit; font-size: 12px; }
+.tc-toggle input { accent-color: #b9d4aa; width: 15px; height: 15px; }
+
+/* ── Lesson card ── */
+.tc-card { --tc-accent: #b9d4aa66; display: grid; gap: 10px; padding: 16px 18px; border: 1px solid #ffffff12; border-left: 4px solid var(--tc-accent); border-radius: 12px; background: #1b261f; }
+.tc-card.tc-best, .tc-card.tc-good, .tc-card.tc-success { --tc-accent: var(--cl-best); }
+.tc-card.tc-inaccuracy { --tc-accent: var(--cl-inaccuracy); }
+.tc-card.tc-mistake { --tc-accent: var(--cl-mistake); }
+.tc-card.tc-blunder { --tc-accent: var(--cl-blunder); }
+.tc-card.tc-retry, .tc-card.tc-notice { --tc-accent: #6ea8dc; }
+.tc-card.tc-opponent { --tc-accent: #6b7a70; }
+.tc-card.tc-book { --tc-accent: #a88865; }
+.tc-card-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.tc-chip { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; background: #ffffff10; color: #dfe8dc; white-space: nowrap; }
+.tc-chip-best, .tc-chip-good, .tc-chip-their { background: #96bc4b26; color: #bfe08f; }
+.tc-chip-inaccuracy { background: #e6a82726; color: #f2c96c; }
+.tc-chip-mistake { background: #e6842729; color: #f5ab6c; }
+.tc-chip-blunder { background: #ca343138; color: #f39391; }
+.tc-chip-retry { background: #6ea8dc29; color: #a3cbf1; }
+.tc-chip-neutral { background: #ffffff10; color: #c9d3cb; }
+.tc-chip-book { background: #a8886533; color: #dcc2a0; }
+.tc-move { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--learn-muted); }
+.tc-headline { font-size: 18px; font-weight: 650; line-height: 1.35; letter-spacing: -.3px; color: #f0f4ee; }
+.tc-why { font-size: 14px; line-height: 1.65; color: #cdd8cf; }
+.tc-also { font-size: 13px; line-height: 1.55; color: #d8c891; }
+.tc-better { font-size: 14px; line-height: 1.6; padding: 10px 12px; border-radius: 8px; background: #96bc4b14; border: 1px solid #96bc4b38; color: #dbe9d0; }
+.tc-habit, .tc-focus { padding: 10px 12px; border-radius: 8px; background: #ffffff06; border: 1px dashed #b9d4aa45; }
+.tc-focus { background: #e6a8270d; border: 1px solid #e6a82738; }
+.tc-habit-label { display: block; font-size: 10px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: var(--learn-green); margin-bottom: 4px; }
+.tc-habit p, .tc-focus p { font-size: 13px; line-height: 1.6; color: #d7e0d7; }
+.tc-link { display: inline-block; background: none; border: 0; padding: 6px 0 0; color: var(--learn-green); font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; text-align: left; }
+.tc-link:hover { text-decoration: underline; }
+.tc-note { font-size: 13px; line-height: 1.55; color: #b3c1b6; font-style: italic; }
+.tc-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.tc-actions .btn { white-space: normal; justify-content: center; text-align: center; line-height: 1.35; }
+.tc-details summary { cursor: pointer; font-size: 12px; color: var(--learn-muted); }
+.tc-details p { font-size: 12px; line-height: 1.6; color: #b3c1b6; margin-top: 6px; }
+.tc-line { font-family: 'JetBrains Mono', monospace; color: #dfe8dc; }
+.tc-fine { font-size: 12px; line-height: 1.6; color: #95a499; }
+.tc-feedback { font-size: 13px; line-height: 1.6; padding: 10px 12px; border-radius: 8px; background: #e6842712; border: 1px solid #e6842745; color: #f1dcc6; }
+.tc-hints { margin-left: 20px; display: grid; gap: 6px; font-size: 13px; line-height: 1.55; color: #dbe7f3; }
+
+/* ── Welcome, levels and the three-step routine ── */
+.tc-welcome, .tc-gameover { display: grid; gap: 12px; }
+.tc-welcome .eyebrow, .tc-gameover .eyebrow { margin-bottom: 0; }
+.tc-welcome h3, .tc-gameover h3 { font-size: 20px; line-height: 1.3; letter-spacing: -.4px; }
+.tc-welcome > p, .tc-gameover > p { font-size: 13px; line-height: 1.7; color: #afbbb2; }
+.tc-levels { display: grid; gap: 8px; }
+.tc-level { display: grid; gap: 4px; padding: 12px 14px; text-align: left; border-radius: 10px; border: 1px solid #ffffff14; background: #ffffff05; color: var(--text); font: inherit; cursor: pointer; }
+.tc-level:hover, .tc-level:focus-visible { border-color: #b9d4aa77; background: #b9d4aa0f; }
+.tc-level strong { font-size: 14px; }
+.tc-level span { font-size: 12px; line-height: 1.5; color: #a9b8ac; }
+.tc-steps { list-style: none; counter-reset: step; display: grid; gap: 10px; }
+.tc-steps li { counter-increment: step; display: grid; grid-template-columns: 26px minmax(0, 1fr); column-gap: 10px; row-gap: 2px; }
+.tc-steps li::before { content: counter(step); grid-row: span 2; width: 24px; height: 24px; border-radius: 50%; background: #b9d4aa22; color: var(--learn-green); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.tc-steps strong { font-size: 13px; color: #e8efe6; }
+.tc-steps span { font-size: 13px; line-height: 1.55; color: #c3cfc5; }
+.tc-steps .tc-ask { color: #9fb0a3; }
+.tc-busy { display: flex; align-items: center; gap: 10px; padding: 0 0 12px; font-size: 13px; color: #c5d3c7; }
+.tc-spinner { width: 14px; height: 14px; flex: 0 0 auto; border-radius: 50%; border: 2px solid #b9d4aa33; border-top-color: #b9d4aa; animation: spin .8s linear infinite; }
+
+/* After the bot moves: what it did, then the routine */
+.tc-turn { display: grid; gap: 14px; }
+.tc-recap + .tc-turn { margin-top: 12px; }
+.tc-bot-note { font-size: 15px; line-height: 1.55; color: #eef3ec; padding: 12px 14px; border-radius: 10px; background: #ffffff07; border: 1px solid #ffffff10; }
+.tc-routine h4 { margin-bottom: 10px; font-size: 11px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--learn-green); }
+.tc-recap { border: 1px solid #ffffff10; border-radius: 10px; padding: 8px 12px; background: #ffffff04; }
+.tc-recap > summary { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; color: #d7e0d7; }
+.tc-recap[open] > summary { margin-bottom: 10px; }
+.tc-hint-box { margin-bottom: 12px; padding: 12px 14px; border-radius: 10px; background: #6ea8dc14; border: 1px solid #6ea8dc45; }
+.tc-hint-box p { font-size: 13px; line-height: 1.6; color: #dbe7f3; }
+
+/* Game over */
+.tc-gameover h4, .tc-review-summary h4 { font-size: 11px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--learn-green); }
+.tc-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.tc-summary div { padding: 10px 6px; text-align: center; border-radius: 10px; background: #ffffff06; }
+.tc-summary strong { display: block; font-size: 20px; color: #eef3ec; }
+.tc-summary span { font-size: 11px; color: #a9b8ac; }
+.tc-lessons { list-style: none; display: grid; gap: 8px; }
+.tc-lessons li { padding: 10px 12px; border-radius: 10px; background: #ffffff05; border: 1px solid #ffffff0d; }
+.tc-lessons p { margin-top: 4px; font-size: 13px; line-height: 1.55; color: #c3cfc5; }
+.tc-count { margin-left: 4px; font-size: 11px; color: #f2c96c; }
+
+/* ── Board highlights ── */
+#chessboard .square.tc-sq-danger { box-shadow: inset 0 0 0 4px #ca3431d9; }
+#chessboard .square.tc-sq-target { box-shadow: inset 0 0 0 4px #96bc4bd9; }
+#chessboard .square.tc-sq-warn { box-shadow: inset 0 0 0 4px #e6a827d9; }
+#chessboard .square.tc-sq-hint { box-shadow: inset 0 0 0 4px #6ea8dcd9; }
+.tc-board { position: relative; }
+.tc-board .learning-square { display: flex; align-items: center; justify-content: center; }
+.tc-board .study-last { box-shadow: inset 0 0 0 3px #e2c769; }
+.tc-arrows { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 3; pointer-events: none; }
+.tc-board .learning-square.tc-mark-danger, #studyBoard .learning-square.tc-mark-danger { box-shadow: inset 0 0 0 4px #ca3431d9; }
+.tc-board .learning-square.tc-mark-target, #studyBoard .learning-square.tc-mark-target { box-shadow: inset 0 0 0 4px #96bc4bd9; }
+.tc-board .learning-square.tc-mark-warn, #studyBoard .learning-square.tc-mark-warn { box-shadow: inset 0 0 0 4px #e6a827d9; }
+.tc-board .learning-square.tc-mark-hint, #studyBoard .learning-square.tc-mark-hint { box-shadow: inset 0 0 0 4px #6ea8dcd9; }
+
+/* Study board card */
+#studyCard:not(:empty) { margin-bottom: 16px; }
+#studyCard .tc-card { background: #16201a; }
+
+/* ── Game review ── */
+.tc-review-landing, .tc-review-setup { max-width: 760px; display: grid; gap: 16px; }
+.tc-review-how { list-style: none; counter-reset: how; display: grid; gap: 10px; }
+.tc-review-how li { counter-increment: how; display: grid; grid-template-columns: 36px minmax(0, 1fr); column-gap: 14px; row-gap: 2px; padding: 14px 16px; border-radius: 12px; background: #19231d; border: 1px solid #ffffff0d; }
+.tc-review-how li::before { content: counter(how); grid-row: span 2; width: 32px; height: 32px; border-radius: 50%; background: #b9d4aa22; color: var(--learn-green); font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.tc-review-how strong { font-size: 15px; }
+.tc-review-how span { font-size: 13px; line-height: 1.6; color: #a9b8ac; }
+.tc-review-setup h2 { font-size: 24px; letter-spacing: -.5px; }
+.tc-review-setup p { color: #b6c2b7; line-height: 1.6; }
+.tc-seg { display: flex; flex-wrap: wrap; gap: 8px; }
+.tc-review-layout { display: grid; grid-template-columns: minmax(280px, 540px) minmax(300px, 1fr); gap: 28px; align-items: start; }
+.tc-review-board-col { position: sticky; top: calc(var(--coach-header-height, 72px) + 12px); display: grid; gap: 8px; }
+#reviewBoard { width: min(100%, max(280px, calc(100vh - var(--coach-header-height, 72px) - 260px))); margin: 0 auto; }
+#reviewMode[data-compact] .study-heading { margin-bottom: 14px; align-items: center; }
+#reviewMode[data-compact] .study-heading .eyebrow, #reviewMode[data-compact] .study-heading p { display: none; }
+#reviewMode[data-compact] .study-heading h1 { font-size: 22px; }
+.tc-review-name { font-size: 13px; color: #c5d3c7; }
+.tc-review-nav { display: flex; flex-wrap: wrap; gap: 6px; }
+.tc-review-nav .btn { padding: 8px 12px; }
+.tc-line-box { display: grid; gap: 8px; padding: 12px 14px; border-radius: 10px; background: #19231d; border: 1px solid #b9d4aa33; }
+.tc-line-box p { font-size: 14px; line-height: 1.6; }
+.tc-line-box .pattern-actions { margin: 0; }
+.tc-review-panel { position: sticky; top: calc(var(--coach-header-height, 72px) + 12px); max-height: calc(100vh - var(--coach-header-height, 72px) - 24px); overflow-y: auto; overscroll-behavior: contain; display: grid; gap: 14px; align-content: start; padding-right: 4px; }
+.tc-review-summary { padding: 12px 16px; border-radius: 12px; background: #17221b; border: 1px solid #ffffff10; }
+.tc-review-summary > summary { cursor: pointer; font-size: 14px; font-weight: 600; }
+.tc-review-summary[open] > summary { margin-bottom: 12px; }
+.tc-review-summary h4 { margin: 14px 0 8px; }
+.tc-review-summary .tc-actions { margin-top: 14px; }
+.tc-sides { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.tc-side { display: grid; gap: 2px; padding: 10px 12px; border-radius: 10px; background: #ffffff05; border: 1px solid #ffffff0d; }
+.tc-side.tc-you { border-color: #b9d4aa55; background: #b9d4aa0d; }
+.tc-side span { font-size: 12px; color: #c5d3c7; overflow-wrap: anywhere; }
+.tc-side strong { font-size: 24px; color: #eef3ec; }
+.tc-side small { font-size: 11px; line-height: 1.5; color: #9fb0a3; }
+.tc-graph { display: block; width: 100%; height: auto; margin-top: 12px; border-radius: 8px; cursor: pointer; }
+.tc-graph-bg { fill: #0c120e; }
+.tc-graph-white { fill: #e4e8dc; }
+.tc-graph-mid { stroke: #7c9672; stroke-width: 1; stroke-dasharray: 4 4; }
+.tc-graph-cursor { stroke: #e2c769; stroke-width: 3; }
+.tc-dot-mistake { fill: var(--cl-mistake); stroke: #111815; stroke-width: 2; }
+.tc-dot-blunder { fill: var(--cl-blunder); stroke: #111815; stroke-width: 2; }
+.tc-dot-other { opacity: .45; }
+.tc-section-title { font-size: 11px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--learn-green); }
+.tc-moves { position: relative; display: grid; grid-template-columns: 3.2em minmax(0, 1fr) minmax(0, 1fr); gap: 3px 6px; max-height: 240px; overflow-y: auto; padding: 8px; border-radius: 10px; background: #17221b; border: 1px solid #ffffff0d; }
+.tc-mv-num { align-self: center; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #7f8f83; }
+.tc-mv { padding: 4px 8px; text-align: left; border: 0; border-radius: 6px; background: transparent; color: #dfe8dc; font-family: 'JetBrains Mono', monospace; font-size: 13px; cursor: pointer; }
+.tc-mv:hover { background: #ffffff0d; }
+.tc-mv.current { background: #b9d4aa30; outline: 1px solid #b9d4aa70; }
+.tc-mv span { margin-left: 2px; font-weight: 700; }
+.tc-mv-inaccuracy span { color: #f2c96c; }
+.tc-mv-mistake span { color: #f5ab6c; }
+.tc-mv-blunder span { color: #f39391; }
+.tc-mv-other { color: #9fb0a3; }
+.tc-progress { height: 8px; overflow: hidden; border-radius: 99px; background: #ffffff10; }
+.tc-progress-fill { width: 0; height: 100%; background: #b9d4aa; transition: width .3s; }
+
+@media (max-width: 900px) {
+    .tc-review-layout { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+    .tc-review-board-col, .tc-review-panel { position: static; max-height: none; overflow: visible; }
+    #reviewBoard { width: min(100%, 460px); }
+}
+@media (max-width: 760px) {
+    /* Phones: the lesson sits directly under the board; game controls follow. */
+    #playMode { display: flex; flex-direction: column; gap: 12px; }
+    #playMode .board-section { display: contents; }
+    #playMode .player-info.opponent { order: 1; align-self: center; }
+    #playMode .board-wrapper { order: 2; align-self: center; }
+    #playMode .player-info.player { order: 3; align-self: center; }
+    #playMode .coach-section { order: 4; }
+    #playMode .board-controls-row { order: 5; align-self: center; }
+    #playMode .rating-control { order: 6; align-self: center; }
+    #playMode .coach-header { padding: 12px 14px; }
+    .tc-coach-tools { margin-left: 0; justify-content: flex-start; }
+    .tc-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .tc-sides { grid-template-columns: minmax(0, 1fr); }
+    #studyCard { order: 5; width: 100%; }
+    .tc-headline { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) { .tc-spinner { animation: none; } }
