@@ -23,309 +23,282 @@
     bp: 'https://upload.wikimedia.org/wikipedia/commons/c/c7/Chess_pdt45.svg'
   };
 
-  /* Preload template images */
+  /* Preload template images (used as silhouettes for piece-type matching) */
   const templateBitmaps = {};
-  Object.entries(PIECE_IMAGES).forEach(([name, url]) => {
+  const templatesReady = Promise.all(Object.entries(PIECE_IMAGES).map(([name, url]) => new Promise(resolve => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
+    img.onload = () => { templateBitmaps[name] = img; resolve(); };
+    img.onerror = () => resolve();
     img.src = url;
-    templateBitmaps[name] = img;
-  });
+  })));
+
+  const NORM = 32; // normalized silhouette resolution
 
   /* ═══════════════════════════════════════════════════════
      Computer Vision Engine
      ═══════════════════════════════════════════════════════ */
 
   class BoardVisionEngine {
-    /**
-     * Finds the exact bounding box of the 8x8 chessboard inside any image.
-     */
-    static findBoardBounds(canvas, ctx) {
-      const W = canvas.width;
-      const H = canvas.height;
-      const imgData = ctx.getImageData(0, 0, W, H).data;
-
-      const midY = Math.floor(H / 2);
-      const midX = Math.floor(W / 2);
-
-      // A chessboard square has green, brown, blue, cream, or light grey colors.
-      // Outside UI margins/bars are dark grey (R,G,B < 60) or solid background.
-      function isBoardPixel(x, y) {
-        if (x < 0 || x >= W || y < 0 || y >= H) return false;
-        const idx = (y * W + x) * 4;
-        const r = imgData[idx];
-        const g = imgData[idx + 1];
-        const b = imgData[idx + 2];
-        const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-        const sat = Math.max(r, g, b) - Math.min(r, g, b);
-
-        // Board colors: cream (lum > 160), green (g > r && g > 75), brown/wood (r > 100 && sat > 25), blue, etc.
-        return lum > 140 || (g > 85 && g > b) || (r > 90 && sat > 25) || (b > 85 && b > r);
+    /** Grayscale buffer of the full image. */
+    static toGray(data, W, H) {
+      const g = new Float32Array(W * H);
+      for (let i = 0, p = 0; i < g.length; i++, p += 4) {
+        g[i] = 0.299 * data[p] + 0.587 * data[p + 1] + 0.114 * data[p + 2];
       }
-
-      let x0 = 0, x1 = W - 1;
-      let y0 = 0, y1 = H - 1;
-
-      // Scan horizontally across multiple lines to find left & right board edge
-      for (let x = 0; x < W - 50; x++) {
-        let boardHits = 0;
-        for (let dy = -80; dy <= 80; dy += 20) {
-          if (isBoardPixel(x, midY + dy)) boardHits++;
-        }
-        if (boardHits >= 4) { x0 = x; break; }
-      }
-
-      for (let x = W - 1; x >= 50; x--) {
-        let boardHits = 0;
-        for (let dy = -80; dy <= 80; dy += 20) {
-          if (isBoardPixel(x, midY + dy)) boardHits++;
-        }
-        if (boardHits >= 4) { x1 = x; break; }
-      }
-
-      // Scan vertically across multiple lines to find top & bottom board edge
-      for (let y = 0; y < H - 50; y++) {
-        let boardHits = 0;
-        for (let dx = -80; dx <= 80; dx += 20) {
-          if (isBoardPixel(midX + dx, y)) boardHits++;
-        }
-        if (boardHits >= 4) { y0 = y; break; }
-      }
-
-      for (let y = H - 1; y >= 50; y--) {
-        let boardHits = 0;
-        for (let dx = -80; dx <= 80; dx += 20) {
-          if (isBoardPixel(midX + dx, y)) boardHits++;
-        }
-        if (boardHits >= 4) { y1 = y; break; }
-      }
-
-      const boardW = x1 - x0 + 1;
-      const boardH = y1 - y0 + 1;
-
-      // In a real chessboard, width and height are nearly identical
-      const size = Math.min(boardW, boardH);
-
-      return {
-        x: x0,
-        y: y0,
-        width: size,
-        height: size,
-        sqSize: size / 8
-      };
+      return g;
     }
 
     /**
-     * Main recognition routine. Returns { fen, bounds, turn, inCheck }.
+     * Finds the 9 equally spaced grid lines along one axis by maximizing edge
+     * strength at grid lines while penalizing edges at square centers.
      */
-    static recognize(img) {
-      const W = img.naturalWidth || img.width;
-      const H = img.naturalHeight || img.height;
+    static findGridAxis(profile, N) {
+      const at = (i) => {
+        const k = Math.round(i);
+        let m = 0;
+        for (let d = -1; d <= 1; d++) {
+          const v = profile[k + d];
+          if (v !== undefined && v > m) m = v;
+        }
+        return m;
+      };
+      let best = { score: -Infinity, offset: 0, step: N / 8 };
+      const minStep = Math.max(8, N / 8 * 0.25);
+      for (let s = N / 8; s >= minStep; s -= 0.5) {
+        for (let o = 0; o + 8 * s < N; o += 1) {
+          let peaks = 0, mids = 0, minPeak = Infinity;
+          for (let k = 0; k <= 8; k++) {
+            const v = at(o + k * s);
+            peaks += v;
+            if (k >= 1 && k <= 7 && v < minPeak) minPeak = v;
+            if (k < 8) mids += at(o + k * s + s / 2);
+          }
+          // Inner grid lines must all be present; favor bigger boards slightly.
+          const score = (peaks / 9 - mids / 8) + minPeak * 0.5 + s * 0.01;
+          if (score > best.score) best = { score, offset: o, step: s };
+        }
+      }
+      return best;
+    }
+
+    static findBoardBounds(gray, W, H) {
+      const colP = new Float32Array(W);
+      const rowP = new Float32Array(H);
+      for (let y = 1; y < H; y++) {
+        for (let x = 1; x < W; x++) {
+          const i = y * W + x;
+          colP[x] += Math.abs(gray[i] - gray[i - 1]);
+          rowP[y] += Math.abs(gray[i] - gray[i - W]);
+        }
+      }
+      for (let x = 0; x < W; x++) colP[x] /= H;
+      for (let y = 0; y < H; y++) rowP[y] /= W;
+
+      const bx = this.findGridAxis(colP, W);
+      const by = this.findGridAxis(rowP, H);
+      const step = (bx.step + by.step) / 2;
+      return { x: bx.offset, y: by.offset, width: step * 8, height: step * 8, sqSize: step };
+    }
+
+    /** Median color of a thin ring along the square's border (robust to labels / highlights). */
+    static squareBackground(data, w, h) {
+      const rs = [], gs = [], bs = [];
+      const band = Math.max(1, Math.floor(w * 0.06));
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          if (x >= band && x < w - band && y >= band && y < h - band) continue;
+          const i = (y * w + x) * 4;
+          rs.push(data[i]); gs.push(data[i + 1]); bs.push(data[i + 2]);
+        }
+      }
+      const med = (a) => { a.sort((p, q) => p - q); return a[a.length >> 1]; };
+      return { r: med(rs), g: med(gs), b: med(bs) };
+    }
+
+    /** Foreground mask with interior holes filled (flood-fill background from the border). */
+    static pieceMask(data, w, h, bg) {
+      const fg = new Uint8Array(w * h);
+      for (let i = 0; i < w * h; i++) {
+        const p = i * 4;
+        const diff = Math.abs(data[p] - bg.r) + Math.abs(data[p + 1] - bg.g) + Math.abs(data[p + 2] - bg.b);
+        if (diff > 60) fg[i] = 1;
+      }
+      // Flood fill from edges through non-foreground pixels
+      const outside = new Uint8Array(w * h);
+      const stack = [];
+      const push = (i) => { if (!fg[i] && !outside[i]) { outside[i] = 1; stack.push(i); } };
+      for (let x = 0; x < w; x++) { push(x); push((h - 1) * w + x); }
+      for (let y = 0; y < h; y++) { push(y * w); push(y * w + w - 1); }
+      while (stack.length) {
+        const i = stack.pop();
+        const x = i % w, y = (i / w) | 0;
+        if (x > 0) push(i - 1);
+        if (x < w - 1) push(i + 1);
+        if (y > 0) push(i - w);
+        if (y < h - 1) push(i + w);
+      }
+      const mask = new Uint8Array(w * h);
+      for (let i = 0; i < w * h; i++) mask[i] = outside[i] ? 0 : 1;
+      return mask;
+    }
+
+    /** Crops a mask to its bounding box and resamples it into NORM x NORM (aspect preserved). */
+    static normalizeMask(mask, w, h) {
+      let minX = w, maxX = -1, minY = h, maxY = -1, area = 0;
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          if (!mask[y * w + x]) continue;
+          area++;
+          if (x < minX) minX = x; if (x > maxX) maxX = x;
+          if (y < minY) minY = y; if (y > maxY) maxY = y;
+        }
+      }
+      if (maxX < 0) return null;
+      const bw = maxX - minX + 1, bh = maxY - minY + 1;
+      const scale = NORM / Math.max(bw, bh);
+      const ox = (NORM - bw * scale) / 2, oy = (NORM - bh * scale) / 2;
+      const out = new Uint8Array(NORM * NORM);
+      for (let ny = 0; ny < NORM; ny++) {
+        for (let nx = 0; nx < NORM; nx++) {
+          const sx = Math.floor((nx - ox) / scale) + minX;
+          const sy = Math.floor((ny - oy) / scale) + minY;
+          if (sx >= minX && sx <= maxX && sy >= minY && sy <= maxY && mask[sy * w + sx]) out[ny * NORM + nx] = 1;
+        }
+      }
+      return { norm: out, aspect: bw / bh, bw, bh, area };
+    }
+
+    static templates() {
+      if (this._templates) return this._templates;
+      const list = [];
+      const S = 90;
+      const c = document.createElement('canvas');
+      c.width = S; c.height = S;
+      const ctx = c.getContext('2d', { willReadFrequently: true });
+      for (const [name, img] of Object.entries(templateBitmaps)) {
+        ctx.clearRect(0, 0, S, S);
+        ctx.drawImage(img, 0, 0, S, S);
+        let d;
+        try { d = ctx.getImageData(0, 0, S, S).data; } catch (e) { continue; }
+        const mask = new Uint8Array(S * S);
+        for (let i = 0; i < S * S; i++) mask[i] = d[i * 4 + 3] > 100 ? 1 : 0;
+        const n = this.normalizeMask(mask, S, S);
+        if (n) list.push({ type: name[1], ...n });
+      }
+      if (list.length === 12) this._templates = list;
+      return list;
+    }
+
+    static matchType(n) {
+      let best = { type: 'p', score: -Infinity };
+      for (const t of this.templates()) {
+        let inter = 0, uni = 0;
+        for (let i = 0; i < n.norm.length; i++) {
+          const a = n.norm[i], b = t.norm[i];
+          if (a & b) inter++;
+          if (a | b) uni++;
+        }
+        const score = inter / Math.max(1, uni) - Math.abs(Math.log(n.aspect / t.aspect)) * 0.6;
+        if (score > best.score) best = { type: t.type, score };
+      }
+      return best.type;
+    }
+
+    /** Main recognition routine. Returns { fen, bounds, turn, inCheck }. */
+    static async recognize(img) {
+      await templatesReady;
+      let W = img.naturalWidth || img.width;
+      let H = img.naturalHeight || img.height;
+      // Downscale very large images for speed
+      const k = Math.min(1, 900 / Math.max(W, H));
+      W = Math.round(W * k); H = Math.round(H * k);
 
       const canvas = document.createElement('canvas');
-      canvas.width = W;
-      canvas.height = H;
+      canvas.width = W; canvas.height = H;
       const ctx = canvas.getContext('2d', { willReadFrequently: true });
       ctx.drawImage(img, 0, 0, W, H);
+      const all = ctx.getImageData(0, 0, W, H).data;
 
-      const bounds = this.findBoardBounds(canvas, ctx);
-      const sq = bounds.sqSize;
-
-      // Sample canonical light and dark square colors from known squares
-      // a8 (r=0, c=0) is dark, b8 (r=0, c=1) is light
-      const darkColor = this.sampleSquareCorner(ctx, bounds.x + 0 * sq, bounds.y + 0 * sq, sq);
-      const lightColor = this.sampleSquareCorner(ctx, bounds.x + 1 * sq, bounds.y + 0 * sq, sq);
+      const b = this.findBoardBounds(this.toGray(all, W, H), W, H);
+      const sq = b.sqSize;
 
       const grid = [];
-
       for (let r = 0; r < 8; r++) {
         const row = [];
         for (let c = 0; c < 8; c++) {
-          const sx = bounds.x + c * sq;
-          const sy = bounds.y + r * sq;
-          const isLight = (r + c) % 2 === 0;
-          const expectedBg = isLight ? lightColor : darkColor;
-
-          const piece = this.classifySquare(ctx, sx, sy, sq, expectedBg, r, c);
-          row.push(piece);
+          // Inset a little so slivers of neighboring squares don't pollute the mask
+          const inset = Math.ceil(sq * 0.04);
+          const sx = Math.round(b.x + c * sq) + inset, sy = Math.round(b.y + r * sq) + inset;
+          const s = Math.max(4, Math.floor(sq) - inset * 2);
+          row.push(this.classifySquare(ctx.getImageData(sx, sy, s, s).data, s));
         }
         grid.push(row);
       }
 
+      this.fixOrientation(grid);
       this.normalizeKings(grid);
 
-      // Build FEN string
-      const fenRanks = [];
-      for (let r = 0; r < 8; r++) {
-        let empty = 0;
-        let str = '';
-        for (let c = 0; c < 8; c++) {
-          const p = grid[r][c];
-          if (!p) {
-            empty++;
-          } else {
-            if (empty > 0) { str += empty; empty = 0; }
-            str += (p.color === 'w' ? p.type.toUpperCase() : p.type.toLowerCase());
-          }
+      const placement = grid.map(row => {
+        let str = '', empty = 0;
+        for (const p of row) {
+          if (!p) { empty++; continue; }
+          if (empty) { str += empty; empty = 0; }
+          str += p.color === 'w' ? p.type.toUpperCase() : p.type;
         }
-        if (empty > 0) str += empty;
-        fenRanks.push(str);
-      }
+        return str + (empty || '');
+      }).join('/');
 
-      const placement = fenRanks.join('/');
-
-      // Check if either king is in check
-      let inCheck = null;
-      let turn = 'w';
-
-      try {
-        const gB = new Chess(`${placement} b - - 0 1`);
-        if (gB.in_check()) {
-          inCheck = 'b';
-          turn = 'b';
-        }
-      } catch (e) {}
-
+      let inCheck = null, turn = 'w';
+      try { if (new Chess(`${placement} b - - 0 1`).in_check()) { inCheck = 'b'; turn = 'b'; } } catch (e) {}
       if (!inCheck) {
-        try {
-          const gW = new Chess(`${placement} w - - 0 1`);
-          if (gW.in_check()) {
-            inCheck = 'w';
-            turn = 'w';
-          }
-        } catch (e) {}
+        try { if (new Chess(`${placement} w - - 0 1`).in_check()) inCheck = 'w'; } catch (e) {}
       }
 
-      const fen = `${placement} ${turn} - - 0 1`;
-      return { fen, bounds, turn, inCheck };
+      const bounds = { x: b.x / k, y: b.y / k, width: b.width / k, height: b.height / k, sqSize: sq / k };
+      return { fen: `${placement} ${turn} - - 0 1`, bounds, turn, inCheck };
     }
 
-    /**
-     * Samples the corner pixel of a square to get its true background color.
-     */
-    static sampleSquareCorner(ctx, sx, sy, sq) {
-      const offset = Math.max(3, Math.floor(sq * 0.08));
-      const p = ctx.getImageData(Math.floor(sx + offset), Math.floor(sy + offset), 1, 1).data;
-      return { r: p[0], g: p[1], b: p[2] };
+    /** Classifies one square image: null (empty) or { type, color }. */
+    static classifySquare(data, s) {
+      const bg = this.squareBackground(data, s, s);
+      const mask = this.pieceMask(data, s, s, bg);
+      const n = this.normalizeMask(mask, s, s);
+      if (!n) return null;
+      // Reject coordinate labels, dots, and highlight remnants
+      if (n.area < s * s * 0.08 || n.bh < s * 0.35 || n.bw < s * 0.2) return null;
+
+      let bright = 0, dark = 0;
+      for (let i = 0; i < s * s; i++) {
+        if (!mask[i]) continue;
+        const p = i * 4;
+        const lum = 0.299 * data[p] + 0.587 * data[p + 1] + 0.114 * data[p + 2];
+        if (lum > 150) bright++;
+        else if (lum < 110) dark++;
+      }
+      // White pieces have thick dark outlines, black pieces only thin light details
+      const color = bright > dark * 0.5 ? 'w' : 'b';
+      return { type: this.matchType(n), color };
     }
 
-    /**
-     * Inspects a single square to classify empty vs occupied and piece type.
-     */
-    static classifySquare(ctx, sx, sy, sq, expectedBg, r, c) {
-      const step = 2;
-      const margin = Math.floor(sq * 0.10);
-      const w = Math.floor(sq - margin * 2);
-      const h = Math.floor(sq - margin * 2);
-
-      const data = ctx.getImageData(Math.floor(sx + margin), Math.floor(sy + margin), w, h).data;
-
-      let fg = 0;
-      let isWhite = 0;
-      let isBlack = 0;
-
-      let minY = h, maxY = 0, minX = w, maxX = 0;
-      const rowCounts = new Array(h).fill(0);
-      const colCounts = new Array(w).fill(0);
-
-      for (let y = 0; y < h; y += step) {
-        for (let x = 0; x < w; x += step) {
-          const idx = (y * w + x) * 4;
-          const pr = data[idx];
-          const pg = data[idx + 1];
-          const pb = data[idx + 2];
-
-          const diff = Math.abs(pr - expectedBg.r) + Math.abs(pg - expectedBg.g) + Math.abs(pb - expectedBg.b);
-
-          // Pixel differs significantly from square background
-          if (diff > 55) {
-            fg++;
-            rowCounts[y]++;
-            colCounts[x]++;
-
-            if (y < minY) minY = y;
-            if (y > maxY) maxY = y;
-            if (x < minX) minX = x;
-            if (x > maxX) maxX = x;
-
-            // Pure white body vs dark body
-            if (pr > 225 && pg > 225 && pb > 225) isWhite++;
-            else if (pr < 95 && pg < 95 && pb < 95) isBlack++;
-          }
-        }
+    /** If the screenshot is from Black's perspective, rotate the grid 180°. */
+    static fixOrientation(grid) {
+      let wSum = 0, wN = 0, bSum = 0, bN = 0;
+      grid.forEach((row, r) => row.forEach(p => {
+        if (!p) return;
+        if (p.color === 'w') { wSum += r; wN++; } else { bSum += r; bN++; }
+      }));
+      if (wN && bN && wSum / wN < bSum / bN) {
+        grid.reverse();
+        grid.forEach(row => row.reverse());
       }
-
-      const pH = Math.max(1, maxY - minY);
-      const pW = Math.max(1, maxX - minX);
-
-      // Minimum piece thresholds to eliminate coordinate labels, surrender flags, and badges
-      if (fg < 110 || (isWhite < 30 && isBlack < 30) || pH < sq * 0.40) {
-        return null;
-      }
-
-      const color = (isWhite > isBlack) ? 'w' : 'b';
-
-      // Shape Analysis
-      let type = 'p';
-
-      // 1. Pawn: Narrow body, small height
-      if (pW <= sq * 0.56 && pH <= sq * 0.72) {
-        type = 'p';
-      } else {
-        // Asymmetry (Knight snout)
-        const midX = Math.floor((minX + maxX) / 2);
-        let left = 0, right = 0;
-        for (let x = minX; x < midX; x++) left += colCounts[x] || 0;
-        for (let x = midX; x <= maxX; x++) right += colCounts[x] || 0;
-        const asym = Math.abs(left - right) / Math.max(1, fg);
-
-        // Top width vs base width (Rook flat top)
-        const topY = minY + Math.floor(pH * 0.20);
-        const baseY = maxY - Math.floor(pH * 0.20);
-        let topW = 0, baseW = 0;
-        for (let y = minY; y <= topY; y++) if ((rowCounts[y] || 0) > topW) topW = rowCounts[y];
-        for (let y = baseY; y <= maxY; y++) if ((rowCounts[y] || 0) > baseW) baseW = rowCounts[y];
-
-        // Apex cross check (King vs Queen)
-        const apexY = Math.min(h - 1, minY + 5);
-        const apexW = rowCounts[apexY] || 0;
-
-        if (asym > 0.15) {
-          type = 'n'; // Knight
-        } else if ((topW / Math.max(1, baseW)) > 0.80 && pH <= sq * 0.76) {
-          type = 'r'; // Rook
-        } else if (pH >= sq * 0.74) {
-          // King cross is narrow (< 24), Queen crown spikes are wide (> 28)
-          if (apexW < 24) type = 'k';
-          else type = 'q';
-        } else if (pW >= sq * 0.65) {
-          type = 'q';
-        } else {
-          type = 'b'; // Bishop
-        }
-      }
-
-      return { type, color };
     }
 
-    /**
-     * Ensures legal king count (exactly 1 white king and 1 black king).
-     */
+    /** Ensures at most one king per side. */
     static normalizeKings(grid) {
-      let wKing = 0, bKing = 0;
-      for (let r = 0; r < 8; r++) {
-        for (let c = 0; c < 8; c++) {
-          const p = grid[r][c];
-          if (p && p.type === 'k') {
-            if (p.color === 'w') {
-              wKing++;
-              if (wKing > 1) p.type = 'q';
-            } else {
-              bKing++;
-              if (bKing > 1) p.type = 'q';
-            }
-          }
-        }
+      const seen = { w: 0, b: 0 };
+      for (const row of grid) for (const p of row) {
+        if (p && p.type === 'k' && ++seen[p.color] > 1) p.type = 'q';
       }
     }
   }
@@ -641,7 +614,7 @@
 
       // Run computer vision engine
       try {
-        const res = BoardVisionEngine.recognize(img);
+        const res = await BoardVisionEngine.recognize(img);
         if (res && res.fen) {
           // Render cropped board image on the left canvas
           this.renderCroppedCanvas(img, res.bounds);
