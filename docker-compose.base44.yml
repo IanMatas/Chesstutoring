@@ -1,0 +1,26 @@
+services:
+  web:
+    image: python:3.12-slim
+    restart: on-failure
+    ports:
+      - "3000:8000"
+    volumes:
+      - ./:/app:ro
+    working_dir: /app
+    # Plain static server, but with no-cache headers so edits show on refresh.
+    command:
+      - python3
+      - -c
+      - |
+        import http.server as h
+        class H(h.SimpleHTTPRequestHandler):
+            def end_headers(self):
+                self.send_header("Cache-Control", "no-store")
+                super().end_headers()
+        h.ThreadingHTTPServer(("0.0.0.0", 8000), H).serve_forever()
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
