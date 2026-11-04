@@ -25,7 +25,13 @@
 
   /* Preload template images (used as silhouettes for piece-type matching) */
   const templateBitmaps = {};
-  const templatesReady = Promise.all(Object.entries(PIECE_IMAGES).map(([name, url]) => new Promise(resolve => {
+  // Extra template set: Chess.com "neo" pieces (the most common screenshot source)
+  const NEO_URL = (k) => `https://images.chesscomfiles.com/chess-themes/pieces/neo/150/${k}.png`;
+  const TEMPLATE_SOURCES = [
+    ...Object.entries(PIECE_IMAGES),
+    ...Object.keys(PIECE_IMAGES).map(k => [`neo-${k}`, NEO_URL(k)])
+  ];
+  const templatesReady = Promise.all(TEMPLATE_SOURCES.map(([name, url]) => new Promise(resolve => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => { templateBitmaps[name] = img; resolve(); };
@@ -122,7 +128,7 @@
       for (let i = 0; i < w * h; i++) {
         const p = i * 4;
         const diff = Math.abs(data[p] - bg.r) + Math.abs(data[p + 1] - bg.g) + Math.abs(data[p + 2] - bg.b);
-        if (diff > 60) fg[i] = 1;
+        if (diff > 40) fg[i] = 1;
       }
       // Flood fill from edges through non-foreground pixels
       const outside = new Uint8Array(w * h);
@@ -140,7 +146,32 @@
       }
       const mask = new Uint8Array(w * h);
       for (let i = 0; i < w * h; i++) mask[i] = outside[i] ? 0 : 1;
-      return mask;
+      return this.largestComponent(mask, w, h);
+    }
+
+    /** Keeps only the biggest connected blob (drops coordinate letters, dots, etc). */
+    static largestComponent(mask, w, h) {
+      const label = new Int32Array(w * h);
+      let best = 0, bestSize = 0, id = 0;
+      for (let s = 0; s < w * h; s++) {
+        if (!mask[s] || label[s]) continue;
+        id++;
+        let size = 0;
+        const stack = [s];
+        label[s] = id;
+        while (stack.length) {
+          const i = stack.pop();
+          size++;
+          const x = i % w;
+          for (const j of [x > 0 ? i - 1 : -1, x < w - 1 ? i + 1 : -1, i - w, i + w]) {
+            if (j >= 0 && j < w * h && mask[j] && !label[j]) { label[j] = id; stack.push(j); }
+          }
+        }
+        if (size > bestSize) { bestSize = size; best = id; }
+      }
+      const out = new Uint8Array(w * h);
+      for (let i = 0; i < w * h; i++) out[i] = label[i] === best ? 1 : 0;
+      return out;
     }
 
     /** Crops a mask to its bounding box and resamples it into NORM x NORM (aspect preserved). */
@@ -184,9 +215,9 @@
         const mask = new Uint8Array(S * S);
         for (let i = 0; i < S * S; i++) mask[i] = d[i * 4 + 3] > 100 ? 1 : 0;
         const n = this.normalizeMask(mask, S, S);
-        if (n) list.push({ type: name[1], ...n });
+        if (n) list.push({ type: name.slice(-1), ...n });
       }
-      if (list.length === 12) this._templates = list;
+      if (list.length === TEMPLATE_SOURCES.length) this._templates = list;
       return list;
     }
 
@@ -267,6 +298,8 @@
       if (!n) return null;
       // Reject coordinate labels, dots, and highlight remnants
       if (n.area < s * s * 0.08 || n.bh < s * 0.35 || n.bw < s * 0.2) return null;
+      // A blob spanning the whole square is image noise, not a piece
+      if (n.bw >= s * 0.97 && n.bh >= s * 0.97) return null;
 
       let bright = 0, dark = 0;
       for (let i = 0; i < s * s; i++) {
